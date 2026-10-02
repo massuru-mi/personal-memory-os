@@ -1,0 +1,37 @@
+config_schema_version: 1
+language:
+  primary: ja
+  fallback: en
+  locale: ja-JP
+  timezone: Asia/Tokyo
+  output:
+    responses: ja
+    memory: ja
+    daily: ja
+    summaries: ja
+    tags: en
+  preserve_source_language: true
+memory:
+  auto_save: true
+  importance_threshold: 0.60
+  auto_promote_explicit_decisions: true
+  inferred_memory_min_confidence: 0.80
+corrections:
+  auto_promote: true
+  default_priority: critical
+  repeat_error_escalation: true
+  guardrail_repeat_threshold: 2
+daily:
+  enabled: true
+  one_file_per_chat: true
+  update_on_every_meaningful_turn: true
+  summary_generation: true
+views:
+  now_window_days: 30
+maintenance:
+  auto_archive_days: 365
+  build_fts_index: true
+privacy:
+  raw_chat_archiving: false
+  allow_system_write_by_ai: false
+  allow_config_write_by_ai: false
