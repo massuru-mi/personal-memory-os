@@ -87,9 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _emit(data, as_json: bool) -> None:
-    if as_json:
-        print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
-    elif isinstance(data, (dict, list)):
+    if as_json or isinstance(data, (dict, list)):
         print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
     else:
         print(data)
@@ -174,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run(args)
         _emit(result, args.json)
         return 0
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - CLI boundary reports unexpected failures cleanly
         if args.json:
             _emit({"error": type(exc).__name__, "message": str(exc)}, True)
         else:

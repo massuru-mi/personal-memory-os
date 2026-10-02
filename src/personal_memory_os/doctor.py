@@ -33,7 +33,7 @@ def run_doctor(root: Path) -> list[Check]:
         for path in directory.glob("*.md"):
             try:
                 load_file(path)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - doctor reports arbitrary parse failures
                 invalid.append(f"{path.name}:{type(exc).__name__}")
     checks.append(Check("memory_parse", not invalid, ", ".join(invalid) if invalid else "clean"))
     version = read_version(root)

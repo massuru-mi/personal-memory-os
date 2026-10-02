@@ -25,7 +25,7 @@ def now_for_vault(vault_root: Path) -> datetime:
     tz_name = settings.get("language", {}).get("timezone", "UTC")
     try:
         tz = ZoneInfo(tz_name)
-    except Exception:
+    except ZoneInfoNotFoundError:
         tz = ZoneInfo("UTC")
     return datetime.now(tz)
 
@@ -91,9 +91,6 @@ def read_events(directory: Path) -> list[tuple[dict, str, Path]]:
     if not directory.exists():
         return rows
     for path in sorted(directory.glob("*.md")):
-        try:
-            meta, body = load_file(path)
-        except Exception:
-            continue
+        meta, body = load_file(path)
         rows.append((meta, body.strip(), path))
     return rows

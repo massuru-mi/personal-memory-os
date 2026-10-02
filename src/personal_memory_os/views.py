@@ -68,8 +68,8 @@ def render_now(vault_root: Path) -> Path:
             continue
         try:
             created = datetime.fromisoformat(str(meta.get("created_at")))
-        except Exception:
-            created = datetime.min.astimezone()
+        except (TypeError, ValueError):
+            created = datetime.min.replace(tzinfo=cutoff.tzinfo)
         if created >= cutoff:
             rows.append((created, meta, body, path))
     rows.sort(key=lambda x: x[0], reverse=True)
