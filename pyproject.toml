@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personal-memory-os"
-version = "1.0.0"
+version = "1.1.0"
 description = "An open, portable memory layer shared across AI assistants."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "massuru-mi"}]
 dependencies = ["PyYAML>=6.0.2"]
-keywords = ["ai", "memory", "obsidian", "markdown", "second-brain", "personal-knowledge-management"]
+keywords = ["ai", "memory", "obsidian", "markdown", "personal-knowledge-management"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
