@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from personal_memory_os.deploy import detect_drift, install, read_version, update
+from personal_memory_os.deploy import detect_drift, install, update
 from personal_memory_os.errors import DriftError
 
 
