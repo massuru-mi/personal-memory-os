@@ -4,7 +4,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .config import load_settings
 from .frontmatter import dumps, load_file
