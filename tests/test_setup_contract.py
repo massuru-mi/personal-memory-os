@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import yaml
-from personal_memory_os.resources import read_system_text
 
+from personal_memory_os.resources import read_system_text
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
