@@ -7,10 +7,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .config import load_settings
+from .errors import ValidationError
 from .frontmatter import dumps, load_file
 from .io import atomic_write_text, file_lock
 from .models import CorrectionEvent, MemoryEvent
 from .paths import VaultPaths
+from .validation import MEMORY_SCHEMA, validate_document
 
 _SAFE = re.compile(r"[^a-zA-Z0-9._-]+")
 
@@ -51,8 +53,10 @@ def write_memory_event(vault_root: Path, event: MemoryEvent) -> Path:
         "status": event.status,
         "topic": event.topic,
         "supersedes": event.supersedes,
-        **event.metadata,
     }
+    if front.keys() & event.metadata.keys():
+        raise ValidationError("metadata must not override canonical fields")
+    front.update(event.metadata)
     runtime = paths.runtime_root()
     with file_lock(runtime / "locks" / "events.lock"):
         if target.exists():
@@ -86,11 +90,21 @@ def write_correction(vault_root: Path, correction: CorrectionEvent) -> Path:
     return target
 
 
-def read_events(directory: Path) -> list[tuple[dict, str, Path]]:
+def read_events(
+    directory: Path, expected_schema: str = MEMORY_SCHEMA,
+) -> list[tuple[dict, str, Path]]:
     rows: list[tuple[dict, str, Path]] = []
     if not directory.exists():
         return rows
+    ids: set[str] = set()
     for path in sorted(directory.glob("*.md")):
-        meta, body = load_file(path)
+        try:
+            meta, body = load_file(path)
+            validate_document(meta, body, expected_schema)
+            if meta["id"] in ids:
+                raise ValidationError(f"duplicate event ID: {meta['id']}")
+            ids.add(meta["id"])
+        except Exception as exc:
+            raise ValidationError(f"{path}: {exc}") from exc
         rows.append((meta, body.strip(), path))
     return rows
