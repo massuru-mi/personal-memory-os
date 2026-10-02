@@ -10,7 +10,7 @@ Important decisions, project progress, and corrections can also get buried in lo
 
 Personal Memory OS (PMO) aims to provide **a shared memory layer that the user owns, independent of any AI service**. Its canonical records are Markdown files in private storage, designed to remain portable as the tools we use change.
 
-> PMO is in early development. Markdown protocols and a Python CLI are implemented. Cloud setup from the ChatGPT and Claude apps, and conversational maintenance of cloud views, are design proposals. The vision below is distinct from the [features available today](#available-today-and-in-development).
+> PMO is in early development. Markdown protocols, the Python CLI, and an AI-readable Google Drive setup skill are implemented. Connector capabilities still vary by app, and cross-app end-to-end validation remains ongoing. The vision below is distinct from the [features available today](#available-today-and-in-development).
 
 ## Why go beyond Obsidian alone?
 
@@ -34,7 +34,7 @@ This is the intended architecture, not a claim that integrations with every serv
 
 ## Why open source?
 
-Building an AI-assisted second brain involves recurring infrastructure questions:
+Building an AI-assisted personal memory system involves recurring infrastructure questions:
 
 - How should files be organized, and what belongs in long-term memory?
 - When, if ever, should an AI inference become memory?
@@ -45,7 +45,7 @@ Building an AI-assisted second brain involves recurring infrastructure questions
 
 Everyone should not have to design this foundation from scratch and solve the same problems again.
 
-**Once someone has solved a piece of second-brain infrastructure, the next person should be able to build on it.** That is one reason PMO is open source.
+**Once someone has solved a piece of personal-memory infrastructure, the next person should be able to build on it.** That is one reason PMO is open source.
 
 Each user's actual memory stays in private storage. GitHub shares the machinery: protocols, schemas, templates, deployment tools, and migrations.
 
@@ -75,20 +75,20 @@ Memory saved through ChatGPT can be used by Claude. Moving to another assistant 
 
 Automatic saving is a user choice. The proposed initial policy is to carry out explicit save/correction requests and suggest other updates during the conversation. Users can authorize automatic saving within a chosen scope and enable daily records.
 
-## Local execution and scheduled jobs are optional goals
+## Start with an AI + Google Drive
 
-The intended cloud workflow does not require users to install Python or desktop synchronization software:
+PMO can be bootstrapped without installing Python or desktop synchronization software. The canonical setup procedure for AI assistants is [`skills/pmo-setup/SKILL.md`](skills/pmo-setup/SKILL.md).
 
-1. Ask **ChatGPT or the Claude app** to read a published setup guide on GitHub.
-2. Use that app's Google Drive connection to initialize a private PMO folder.
-3. Receive verified storage links and text to paste into the app's instruction settings.
-4. Ask it to remember something, correct an old understanding, or organize recent memory.
+1. Ask ChatGPT, Claude, or another capable assistant to read the setup skill and initialize PMO with its Google Drive connection.
+2. **Before the first Drive write, the setup assistant must have an approved destination.** If the user already supplied a folder/path, that is approval. Otherwise it proposes the default location `My Drive/PMO` and waits for explicit approval.
+3. The setup assistant pins the repository version/commit, reproduces the current `pmo install` layout in that approved location, then lists and reads back the deployed files.
+4. It returns the verified PMO folder link, the verified `START_HERE.md` link, and a minimal instruction snippet for the current AI app.
 
-The setup should provide ChatGPT custom instructions or Claude profile/project instructions. Adding another assistant should connect it to the same vault without recreating the memory. Using the Claude app should not require Claude Code.
+The standard root folder name is **`PMO`**. Detailed runtime behavior lives in the deployed `START_HERE.md`, protocols, and user config. App custom instructions are only a bootstrap pointer telling each new chat to read `START_HERE.md`.
 
-A request to edit `MEMORY.md` should update the canonical records and then refresh the view, so a later CLI rebuild does not erase the change. Maintenance should happen on request or through accepted suggestions, without requiring a recurring job.
+The setup skill does not grant Drive permissions, create background automation, or make unsupported connector operations available. If a required operation cannot be completed, the assistant must report setup as incomplete rather than simulate success.
 
-**This cloud workflow is not implemented or verified end to end.** Each app needs a connection that supports creating, updating, and reading back ordinary files. Pasting instructions does not grant access or create background automation. See the [cloud workflow proposal](docs/local-optional-design.ja.md) and [app instruction drafts](docs/custom-instructions.ja.md), currently in Japanese.
+Requests to edit generated views such as `MEMORY.md` must update canonical records first and refresh the view when possible. External writes do not automatically refresh the local FTS index; local CLI users should run `pmo rebuild` when needed.
 
 ## Available today and in development
 
@@ -101,8 +101,8 @@ A request to edit `MEMORY.md` should update the canonical records and then refre
 | Session logs and daily summaries | Turn ingestion and generation of a selected day's summary implemented |
 | Local search, duplicate detection, backups | Available through the CLI |
 | System updates and migrations | Deployment, drift detection, backups and schema migration foundation implemented; known limitations below |
-| Setup from ChatGPT / Claude apps | Design stage; connection, recovery and readback need live verification |
-| Cloud memory maintenance, suggestions and view refresh | Workflow design in progress |
+| Setup from ChatGPT / Claude apps | `skills/pmo-setup/SKILL.md` implemented; each app must verify its Drive write/readback capabilities at runtime |
+| Cloud memory maintenance, suggestions and view refresh | Runtime rules live in `START_HERE.md`; connector-specific write/rebuild capabilities still vary |
 | Gemini and other assistants | Future integration targets through the shared protocol; not verified |
 | Automatic memory across all assistants or background processing | Not provided; requires integration and an authorized saving policy |
 
@@ -118,7 +118,7 @@ External writes do not currently refresh views or the search index automatically
 | Runtime | Search database, locks | Disposable local files outside the synchronized vault |
 
 ```text
-SecondBrain/
+PMO/
 ├─ START_HERE.md
 ├─ SYSTEM_VERSION.md
 ├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # rebuildable views
@@ -143,14 +143,14 @@ Requires Python 3.11+. Obtain a branch or release containing this README and `py
 
 ```bash
 python -m pip install .
-pmo install /path/to/SecondBrain
-pmo record /path/to/SecondBrain --type preference --content "Example: prefer concise answers"
-pmo rebuild /path/to/SecondBrain
-pmo search /path/to/SecondBrain "concise"
-pmo doctor /path/to/SecondBrain
+pmo install /path/to/PMO
+pmo record /path/to/PMO --type preference --content "Example: prefer concise answers"
+pmo rebuild /path/to/PMO
+pmo search /path/to/PMO "concise"
+pmo doctor /path/to/PMO
 ```
 
-Replace `/path/to/SecondBrain` with your actual destination. For local CLI use with Drive, mirror the folder so tools can read and write ordinary files. You can also open that private folder in Obsidian.
+Replace `/path/to/PMO` with your actual destination. For local CLI use with Drive, mirror the folder so tools can read and write ordinary files. You can also open that private folder in Obsidian.
 
 Other commands:
 
@@ -188,7 +188,7 @@ ruff check .
 
 - [Architecture](docs/architecture.md) / [Storage contract](docs/storage-contract.md)
 - [AI integration](docs/ai-integration.md) / [Memory protocol](docs/memory-protocol.md)
-- [Cloud workflow proposal](docs/local-optional-design.ja.md) / [Instruction drafts](docs/custom-instructions.ja.md)
+- [AI setup skill](skills/pmo-setup/SKILL.md) / [Cloud workflow](docs/local-optional-design.ja.md) / [Minimal instruction templates](docs/custom-instructions.ja.md)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## License
