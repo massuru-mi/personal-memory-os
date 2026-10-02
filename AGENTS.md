@@ -13,9 +13,6 @@ Personal Memory OS is a privacy-preserving OSS system. Never add real user memor
 - `skills/pmo-setup/SKILL.md` is the canonical AI-driven install procedure; `START_HERE.md` is the canonical runtime entrypoint.
 - AI-driven setup must obtain a user-specified or explicitly approved Drive destination before the first write.
 - The standard PMO root folder name in code, docs and examples is `PMO`; do not introduce alternate root naming.
-- `skills/pmo-setup/SKILL.md` is the canonical AI-driven install procedure; `START_HERE.md` is the canonical runtime entrypoint.
-- AI-driven setup must obtain a user-specified or explicitly approved Drive destination before the first write.
-- The standard PMO root folder name in code, docs and examples is `PMO`; do not introduce alternate root naming.
 - Updates fail closed on system drift unless the operator explicitly overrides.
 
 Run tests and lint before proposing changes.
