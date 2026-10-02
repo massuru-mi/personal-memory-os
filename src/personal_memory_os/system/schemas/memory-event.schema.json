@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://personal-memory-os.local/schema/memory-event-v1.json",
+  "title": "PMO Memory Event v1",
+  "type": "object",
+  "required": ["schema", "id", "type", "created_at", "source", "importance", "confidence", "explicitness", "status"],
+  "properties": {
+    "schema": {"const": "pmo.memory-event/v1"},
+    "id": {"type": "string", "minLength": 1},
+    "type": {"enum": ["fact", "preference", "decision", "project_progress", "open_loop", "current_focus", "interest", "relationship", "knowledge"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "source": {"type": "string", "minLength": 1},
+    "importance": {"type": "number", "minimum": 0, "maximum": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "explicitness": {"enum": ["explicit", "inferred"]},
+    "status": {"enum": ["active", "superseded", "archived"]},
+    "topic": {"type": ["string", "null"]},
+    "supersedes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": true
+}
