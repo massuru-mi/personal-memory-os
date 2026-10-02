@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, datetime
 from pathlib import Path
-from typing import Iterable
 
 from .events import safe_slug
 from .frontmatter import dumps, load_file
@@ -40,10 +40,7 @@ def _existing_sections(path: Path) -> dict[str, list[str]]:
     result = {key: [] for key in SECTION_ORDER}
     if not path.exists():
         return result
-    try:
-        _, body = load_file(path)
-    except Exception:
-        return result
+    _, body = load_file(path)
     current: str | None = None
     title_to_key = {title: key for key, title in SECTION_TITLES.items()}
     for line in body.splitlines():
@@ -105,10 +102,7 @@ def render_day_summary(vault_root: Path, day: date) -> Path | None:
         return None
     chunks = [f"# {day.isoformat()} Summary", "_Generated from PMO session logs._"]
     for path in sessions:
-        try:
-            meta, body = load_file(path)
-        except Exception:
-            continue
+        meta, body = load_file(path)
         source = meta.get("source", "unknown")
         topic = meta.get("topic", path.stem)
         chunks.append(f"## {topic} ({source})\n\n{body}")

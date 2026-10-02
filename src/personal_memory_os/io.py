@@ -5,9 +5,9 @@ import json
 import os
 import tempfile
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 
 def sha256_file(path: Path) -> str:
