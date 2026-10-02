@@ -44,4 +44,4 @@ def test_repository_has_no_legacy_root_naming():
             continue
         source = path.read_text(encoding="utf-8")
         for term in forbidden:
-            assert term not in source, f"{term!r} remains in {path.relative_to(REPO_ROOT)}"
+            assert term not in source, "%r remains in %s" % (term, path.relative_to(REPO_ROOT))
