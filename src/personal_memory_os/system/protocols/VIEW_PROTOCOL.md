@@ -10,3 +10,11 @@ They are not canonical. Any generated view may be deleted and rebuilt from canon
 - `INDEX.md`: navigation and counts.
 
 Assistants must resolve conflicts in favor of canonical data and user corrections, not stale generated text.
+
+For each record kind, resolve `supersedes` before rendering the active set. Preserve the
+original files. An archived replacement does not revive a superseded predecessor.
+For memory views, first exclude inferred records below
+`memory.inferred_memory_min_confidence` (default `0.8`); rejected inferences cannot
+hide explicit memory. Both MEMORY and NOW use this rule and label accepted inferences
+with their confidence. Validate canonical records before replacing a view; do not
+silently skip malformed records or claim an incomplete view is current.
