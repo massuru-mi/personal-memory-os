@@ -24,7 +24,7 @@ def load_yaml(path: Path) -> dict[str, Any]:
         return {}
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict):
-        raise ValueError(f"Expected mapping in {path}")
+        raise TypeError(f"Expected mapping in {path}")
     return data
 
 
