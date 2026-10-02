@@ -17,7 +17,9 @@ Canonical data is small, append-oriented Markdown. `MEMORY.md`, `NOW.md`, `GUARD
 
 Cloud-connected assistants should avoid shared mutable hot files. Each memory item is a new file; each chat has its own Daily file. The local maintenance layer may atomically regenerate views. This minimizes Drive synchronization conflicts and retains provenance.
 
-## Retrieval order
+## Bootstrap and retrieval order
+
+`skills/pmo-setup/SKILL.md` is the canonical install procedure for AI-driven setup. After installation, `START_HERE.md` is the canonical runtime entrypoint. App custom instructions should only point new sessions to that entrypoint.
 
 Correction/guardrail context comes first, then durable memory, then current context. Deeper project and knowledge data is read only when necessary. This reduces irrelevant context while preserving the strongest user constraints.
 
