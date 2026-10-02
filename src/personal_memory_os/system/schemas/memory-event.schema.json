@@ -15,7 +15,7 @@
     "explicitness": {"enum": ["explicit", "inferred"]},
     "status": {"enum": ["active", "superseded", "archived"]},
     "topic": {"type": ["string", "null"]},
-    "supersedes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+    "supersedes": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
   },
   "additionalProperties": true
 }

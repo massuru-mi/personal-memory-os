@@ -7,6 +7,7 @@ from typing import Any
 from .daily import write_session
 from .events import new_event_id, now_for_vault, write_correction, write_memory_event
 from .models import CorrectionEvent, MemoryEvent
+from .validation import aware_datetime
 from .views import rebuild_views
 
 
@@ -22,33 +23,33 @@ def ingest_turn(vault_root: Path, payload: dict[str, Any]) -> dict[str, list[str
     for item in payload.get("memory_events", []) or []:
         created_at = _parse_dt(item.get("created_at"), at)
         event = MemoryEvent(
-            id=str(item.get("id") or new_event_id("mem", created_at)),
-            type=str(item["type"]),
-            content=str(item["content"]),
+            id=item.get("id", new_event_id("mem", created_at)),
+            type=item["type"],
+            content=item["content"],
             created_at=created_at,
-            source=str(item.get("source") or source),
-            importance=float(item.get("importance", 0.5)),
-            status=str(item.get("status", "active")),
+            source=item.get("source", source),
+            importance=item.get("importance", 0.5),
+            status=item.get("status", "active"),
             topic=item.get("topic") or topic,
-            confidence=float(item.get("confidence", 1.0)),
-            explicitness=str(item.get("explicitness", "explicit")),
-            supersedes=list(item.get("supersedes", []) or []),
+            confidence=item.get("confidence", 1.0),
+            explicitness=item.get("explicitness", "explicit"),
+            supersedes=item.get("supersedes", []),
         )
         created.append(str(write_memory_event(vault_root, event)))
 
     for item in payload.get("corrections", []) or []:
         created_at = _parse_dt(item.get("created_at"), at)
         correction = CorrectionEvent(
-            id=str(item.get("id") or new_event_id("correction", created_at)),
-            wrong=str(item["wrong"]),
-            correct=str(item["correct"]),
+            id=item.get("id", new_event_id("correction", created_at)),
+            wrong=item["wrong"],
+            correct=item["correct"],
             created_at=created_at,
-            source=str(item.get("source") or source),
-            priority=str(item.get("priority", "critical")),
+            source=item.get("source", source),
+            priority=item.get("priority", "critical"),
             topic=item.get("topic") or topic,
-            status=str(item.get("status", "active")),
-            repeat_error_count=int(item.get("repeat_error_count", 1)),
-            supersedes=list(item.get("supersedes", []) or []),
+            status=item.get("status", "active"),
+            repeat_error_count=item.get("repeat_error_count", 1),
+            supersedes=item.get("supersedes", []),
         )
         corrections_created.append(str(write_correction(vault_root, correction)))
 
@@ -71,9 +72,9 @@ def ingest_turn(vault_root: Path, payload: dict[str, Any]) -> dict[str, list[str
 
 
 def _parse_dt(value: Any, fallback: datetime) -> datetime:
-    if not value:
+    if value is None:
         return fallback
-    return datetime.fromisoformat(str(value))
+    return aware_datetime(value)
 
 
 def _parse_date(value: Any, fallback: date) -> date:

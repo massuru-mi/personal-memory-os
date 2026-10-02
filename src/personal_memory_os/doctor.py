@@ -5,8 +5,9 @@ from pathlib import Path
 
 from .constants import DATA_DIRECTORIES, SETTINGS_FILE, VERSION_FILE
 from .deploy import detect_drift, read_version
-from .frontmatter import load_file
+from .events import read_events
 from .paths import VaultPaths
+from .validation import CORRECTION_SCHEMA, MEMORY_SCHEMA
 
 
 @dataclass(slots=True)
@@ -27,14 +28,11 @@ def run_doctor(root: Path) -> list[Check]:
     checks.append(Check("system_drift", not drift, ", ".join(drift) if drift else "clean"))
     paths = VaultPaths(root)
     invalid: list[str] = []
-    for directory in (paths.events, paths.corrections):
-        if not directory.exists():
-            continue
-        for path in directory.glob("*.md"):
-            try:
-                load_file(path)
-            except Exception as exc:  # noqa: BLE001 - doctor reports arbitrary parse failures
-                invalid.append(f"{path.name}:{type(exc).__name__}")
+    for directory, schema in ((paths.events, MEMORY_SCHEMA), (paths.corrections, CORRECTION_SCHEMA)):
+        try:
+            read_events(directory, schema)
+        except Exception as exc:  # noqa: BLE001 - doctor reports arbitrary parse failures
+            invalid.append(str(exc))
     checks.append(Check("memory_parse", not invalid, ", ".join(invalid) if invalid else "clean"))
     version = read_version(root)
     checks.append(Check("version_readable", bool(version.get("system_version")), str(version.get("system_version"))))
