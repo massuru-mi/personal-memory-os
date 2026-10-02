@@ -1,29 +1,59 @@
 # Personal Memory OS — Start Here
 
-This vault is the user's portable, AI-independent memory layer. The Markdown data in this vault is the source of truth; model-native memory is only supplementary.
+This PMO folder is the user's portable, AI-independent memory layer. Canonical Markdown records in PMO are the source of truth; provider-native memory and chat history are supplementary.
 
-## Required read order
+## Session bootstrap
 
-Before answering a request that may depend on personal context, read in this order:
-1. `GUARDRAILS.md` — user corrections and hard constraints. Highest priority.
-2. `MEMORY.md` — durable user facts, preferences and decisions.
-3. `NOW.md` — recent focus, progress and open loops.
-4. `INDEX.md` — navigate deeper only when needed.
-5. Relevant project/knowledge files when the current request needs them.
+At the beginning of each new chat/session, read this file before relying on PMO context. You do not need to re-read it on every turn unless the PMO rules may have changed.
 
-## Required turn behavior
+Then read, in this order when personal context may affect the answer:
 
-For every meaningful user turn, perform a Memory Check before finishing the response. Do not wait for the user to say “remember this.” Decide whether the interaction contains durable information, a decision, project progress, a correction, an open loop, or something worth retaining.
+1. `_config/settings.yaml` — current user-controlled PMO behavior.
+2. `GUARDRAILS.md` — active user corrections and hard constraints.
+3. `MEMORY.md` — durable memory view.
+4. `NOW.md` — recent focus, progress and open loops.
+5. `INDEX.md` — navigation.
+6. Relevant canonical records and project/knowledge files when needed.
 
-If memory-worthy, append a new event under `10_Memory/Events/`. If the user corrects an AI misunderstanding or reverses an earlier assumption, write a correction under `10_Memory/Corrections/` and treat it as higher priority than ordinary memory. AI inference alone must not silently become canonical memory.
+Generated views are convenient context, not canonical data. When freshness or a conflict matters, inspect the relevant canonical records and latest corrections.
 
-Maintain one session log per chat under `50_Daily/YYYY-MM-DD/`. Update it after every meaningful turn with what was done, learned, decided, corrected and left open. Different chats and different AI providers must use different files to avoid sync conflicts.
+## Memory behavior
+
+Always honor explicit user requests such as “remember this”, “correct that memory”, or “organize my memory”.
+
+For other information:
+
+- If `memory.auto_save` is `false`, do not silently create canonical memory. Offer a concise, concrete save suggestion when future reuse would be valuable.
+- If `memory.auto_save` is `true`, save only within the configured policy and the Memory Protocol.
+- AI inference alone must not be promoted as a user fact. Keep inference distinct and follow the configured confidence rules.
+- User corrections outrank ordinary memory. Follow the Correction Protocol.
+
+Canonical memory events belong under `10_Memory/Events/`; corrections belong under `10_Memory/Corrections/`. Preserve history with `supersedes` rather than rewriting old facts in place.
+
+## Daily behavior
+
+Daily/session logging is optional.
+
+- If `daily.enabled` is `false`, do not create or update Daily files.
+- If enabled, follow the Daily Protocol and keep one provider/session-specific file per chat.
+- PMO does not perform background or scheduled work by itself.
+
+## Generated views
+
+`MEMORY.md`, `NOW.md`, `GUARDRAILS.md`, and `INDEX.md` are generated views. Never make a semantic change only in a generated view.
+
+When the user asks to edit memory represented in a view:
+
+1. update or append the canonical record first;
+2. read back the canonical write when the connector supports it;
+3. refresh the affected view when possible;
+4. report canonical-save success separately from view-refresh success.
 
 ## Write boundary
 
-- `_system/**`: read-only to AI assistants. Updated only by PMO deployment from the OSS repository.
-- `_config/**`: read by AI. Write only when the user explicitly asks to change PMO configuration.
-- Data directories (`00_Inbox`, `10_Memory`, `20_Projects`, `30_Knowledge`, `40_Decisions`, `50_Daily`, `80_Archive`): read/write according to protocol.
-- `MEMORY.md`, `NOW.md`, `GUARDRAILS.md`, `INDEX.md`: generated views. Never treat them as canonical data.
+- `_system/**`: read-only to ordinary AI operation. Updated only by PMO deployment/update.
+- `_config/**`: user-owned. Write only when the user explicitly asks to change PMO configuration.
+- Data directories (`00_Inbox`, `10_Memory`, `20_Projects`, `30_Knowledge`, `40_Decisions`, `50_Daily`, `80_Archive`): read/write only according to protocol and config.
+- Generated root views: derived, never canonical.
 
-Read `_system/protocols/` for the normative rules and `_config/settings.yaml` for user-specific settings such as language and timezone.
+Read `_system/protocols/` for normative details. If required Drive operations are unavailable, state what could and could not be completed; never claim an unread file was read or an unwritten record was saved.
