@@ -4,27 +4,23 @@ PMO intentionally avoids making one model vendor the orchestrator.
 
 ## Cloud/mobile assistants
 
-When a provider can access the user's private cloud folder, point it at `START_HERE.md`. The assistant reads context views and writes provider/session-specific Markdown according to the protocols. No PMO server is required for this path.
+When a provider can access the user's private cloud folder, the runtime entrypoint is `START_HERE.md`. Detailed memory, correction, Daily and write-boundary rules live there and under `_system/protocols/`; app custom instructions should remain a thin bootstrap pointer.
 
-## App-based setup (design proposal)
+Each new chat/session reads `START_HERE.md` once before relying on PMO context. If the connector cannot read it, the assistant must not pretend PMO context was loaded.
 
-ChatGPT and the Claude app are equal setup entrypoints in the
-[cloud setup proposal](local-optional-design.ja.md). Neither requires Claude Code,
-a local PMO installation or a scheduled job. Each app reads the same pinned GitHub
-release and creates or connects to the same private Markdown vault through its
-available Drive connection. App-specific setup changes the connector and instruction
-settings, not the canonical schema.
+## App-based setup
 
-After setup, present verified vault links and instructions for ChatGPT custom
-instructions or Claude profile/project instructions. A project-scoped instruction
-applies only inside that project. See the [instruction draft](custom-instructions.ja.md).
-Check raw-file creation, content updates, listing and readback on each connection;
-search access or native Google Docs editing alone is insufficient. End-to-end setup
-and cross-app handoff remain unverified.
+The canonical AI setup procedure is [`skills/pmo-setup/SKILL.md`](../skills/pmo-setup/SKILL.md).
+
+ChatGPT, Claude, or another capable assistant may use that skill when it has enough GitHub and Google Drive operations. Before any Drive write, it must either receive a destination from the user or obtain explicit approval for a proposed location. The default proposal is `My Drive/PMO`.
+
+The setup assistant pins the repository version/commit, reproduces the current `pmo install` layout, then lists and reads back the deployed files. It returns verified links and the minimal app instruction from [`custom-instructions.ja.md`](custom-instructions.ja.md).
+
+The skill does not grant connector permissions or create background jobs. Required raw-file creation, update, listing and readback capabilities must be checked at runtime.
 
 ## Local agents
 
-Local agents can operate directly on the mirrored vault or submit the provider-neutral JSON turn contract to `pmo ingest-turn`.
+Local agents can operate directly on the mirrored PMO folder or submit the provider-neutral JSON turn contract to `pmo ingest-turn`.
 
 Example:
 
@@ -32,7 +28,7 @@ Example:
 {
   "source": "chatgpt",
   "session_id": "abc123",
-  "topic": "Second Brain design",
+  "topic": "PMO design",
   "memory_events": [
     {
       "type": "decision",
@@ -54,4 +50,4 @@ Example:
 
 ## Native provider memory
 
-Provider-native memory can coexist, but PMO treats it as a cache/optimization rather than canonical user memory. When the two conflict, explicit user correction and canonical PMO data win.
+Provider-native memory can coexist, but PMO treats it as supplementary rather than canonical user memory. When the two conflict, explicit user correction and canonical PMO data win.
