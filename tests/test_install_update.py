@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -46,3 +47,53 @@ def test_install_deploys_remember_and_repair_skills(tmp_path: Path):
     install(vault)
     for name in ("pmo-remember", "pmo-doctor-repair"):
         assert (vault / "_system" / "skills" / name / "SKILL.md").exists()
+
+
+def test_install_deploys_agent_entrypoints_and_custom_rules(tmp_path: Path):
+    vault = tmp_path / "vault"
+    result = install(vault)
+    assert result["skipped_existing"] == []
+    assert "START_HERE.md" in (vault / "AGENTS.md").read_text(encoding="utf-8")
+    assert (vault / "CLAUDE.md").read_text(encoding="utf-8").strip() == "@AGENTS.md"
+    assert (vault / "_config" / "custom_rules.md").exists()
+    assert not (vault / "_system" / "entrypoints").exists()
+
+
+def test_existing_user_agent_files_are_never_overwritten(tmp_path: Path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "CLAUDE.md").write_text("my own rules\n", encoding="utf-8")
+    result = install(vault)
+    assert result["skipped_existing"] == ["CLAUDE.md"]
+    assert (vault / "CLAUDE.md").read_text(encoding="utf-8") == "my own rules\n"
+    assert (vault / "AGENTS.md").exists()
+    assert detect_drift(vault) == []
+    result = update(vault, backup=False)
+    assert result["skipped_existing"] == ["CLAUDE.md"]
+    assert (vault / "CLAUDE.md").read_text(encoding="utf-8") == "my own rules\n"
+
+
+def test_update_adds_entrypoints_and_keeps_custom_rules(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    for name in ("AGENTS.md", "CLAUDE.md"):
+        (vault / name).unlink()
+    manifest = vault / "_system" / "SYSTEM_MANIFEST.json"
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    for name in ("AGENTS.md", "CLAUDE.md"):
+        data["owned_files"].pop(name)
+    manifest.write_text(json.dumps(data), encoding="utf-8")
+    rules = vault / "_config" / "custom_rules.md"
+    rules.write_text("- answer in Japanese\n", encoding="utf-8")
+
+    update(vault, backup=False)
+
+    assert (vault / "AGENTS.md").exists()
+    assert rules.read_text(encoding="utf-8") == "- answer in Japanese\n"
+
+
+def test_edited_agent_entrypoint_is_system_drift(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    (vault / "AGENTS.md").write_text("edited\n", encoding="utf-8")
+    assert "modified:AGENTS.md" in detect_drift(vault)
