@@ -122,3 +122,60 @@ def test_mcp_server_exposes_tools_and_instructions(vault: Path):
             assert boot.structured_content["available"] is False
 
     anyio.run(scenario)
+
+
+def test_bootstrap_keeps_guardrails_and_prioritizes_memory_within_budget(vault: Path):
+    tools = PMOTools(vault, max_context_chars=1500)
+    tools.record_correction("long wrong " * 40, "long correct " * 40)
+    for i in range(30):
+        tools.record_memory("fact", f"filler fact number {i} " + "x" * 60, importance=0.3)
+    tools.record_memory("preference", "Most important preference", importance=0.95)
+    result = tools.bootstrap()
+
+    assert "long correct" in result["guardrails"]
+    assert result["memory"].splitlines()[0].startswith("- (preference) Most important preference")
+    assert result["omitted"]["memory"] > 0
+    assert "pmo_search" in result["more"]
+    assert len(result["guardrails"]) + len(result["now"]) + len(result["memory"]) <= 1500 + 2
+
+
+def test_bootstrap_guardrails_survive_tiny_budget(vault: Path):
+    tools = PMOTools(vault)
+    tools.record_correction("w " * 500, "c " * 500)
+    tools.record_memory("fact", "some fact")
+    result = tools.bootstrap(max_chars=10)
+    assert result["guardrails"].count("c c c") > 0
+    assert result["memory"] == ""
+    assert result["omitted"]["memory"] == 1
+
+
+def test_bootstrap_does_not_repeat_now_items_in_memory(vault: Path):
+    tools = PMOTools(vault)
+    tools.record_memory("open_loop", "Finish the MCP budget work")
+    tools.record_memory("preference", "Likes tables")
+    result = tools.bootstrap()
+    assert "Finish the MCP budget work" in result["now"]
+    assert "Finish the MCP budget work" not in result["memory"]
+    assert "Likes tables" in result["memory"]
+    assert result["omitted"] == {"now": 0, "memory": 0}
+    assert "more" not in result
+
+
+def test_bootstrap_truncates_long_items_and_points_to_the_record(vault: Path):
+    tools = PMOTools(vault)
+    saved = tools.record_memory("knowledge", "y" * 2000)
+    line = PMOTools(vault).bootstrap()["memory"]
+    assert "…" in line
+    assert saved["path"] in line
+    assert len(line) < 600
+
+
+def test_recent_activity_does_not_crowd_out_durable_memory(vault: Path):
+    tools = PMOTools(vault, max_context_chars=2000)
+    for i in range(40):
+        tools.record_memory("project_progress", f"progress step {i} " + "z" * 80)
+    tools.record_memory("preference", "Answers in Japanese", importance=0.9)
+    result = tools.bootstrap()
+    assert "Answers in Japanese" in result["memory"]
+    assert result["now"]
+    assert result["omitted"]["now"] > 0
