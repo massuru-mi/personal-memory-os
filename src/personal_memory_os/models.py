@@ -20,10 +20,11 @@ class MemoryEvent:
     confidence: float = 1.0
     explicitness: str = "explicit"
     supersedes: list[str] = field(default_factory=list)
+    scope: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def validate(self) -> None:
-        validate_fields({**asdict(self), "schema": MEMORY_SCHEMA}, MEMORY_SCHEMA)
+        validate_fields({**asdict(self), "schema": MEMORY_SCHEMA, "scope": self.scope or None}, MEMORY_SCHEMA)
         require_text(self.content, "content")
 
 
@@ -40,10 +41,11 @@ class CorrectionEvent:
     repeat_error_count: int = 1
     supersedes: list[str] = field(default_factory=list)
     trigger: str | None = None
+    scope: list[str] = field(default_factory=list)
 
     def validate(self) -> None:
         validate_fields(
-            {**asdict(self), "schema": CORRECTION_SCHEMA, "type": "correction"},
+            {**asdict(self), "schema": CORRECTION_SCHEMA, "type": "correction", "scope": self.scope or None},
             CORRECTION_SCHEMA,
         )
         require_text(self.wrong, "wrong")

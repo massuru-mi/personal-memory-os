@@ -12,6 +12,7 @@ Frontmatter fields:
 - `topic`
 - `repeat_error_count`
 - `supersedes` when replacing an older correction
+- `scope` (optional): `[global]` or category paths — see the Memory Protocol. Corrections about how to behave in every conversation are global; corrections about one subject (a product, a field, a family matter) go in that subject's category so they are applied there and not loaded everywhere.
 
 Body sections (required; never put these in frontmatter):
 

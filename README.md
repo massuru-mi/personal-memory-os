@@ -101,6 +101,7 @@ Requests to edit generated views such as `MEMORY.md` must update canonical recor
 | Area | Current status |
 |---|---|
 | Markdown memory and corrections | CLI and shared schemas implemented; [`pmo-remember`](skills/pmo-remember/SKILL.md) skill |
+| Global vs. category scope | Memories and corrections can be `global` or in category paths (e.g. `digital/video-editing`); categories emerge from records, are not predefined, and are split/merged via `pmo-organize`. Over MCP only global items load at session start; category items load when the conversation enters that category |
 | Correction triggers | Optional `## Trigger` section (when the correction applies), shown in GUARDRAILS; `pmo correct --trigger` |
 | Memory organization on request | [`pmo-organize`](skills/pmo-organize/SKILL.md) skill: propose duplicates, contradictions, stale items; apply only accepted changes as superseding records |
 | Diagnosis and repair | `pmo doctor`; [`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md) skill applies only content-preserving repairs after a backup |

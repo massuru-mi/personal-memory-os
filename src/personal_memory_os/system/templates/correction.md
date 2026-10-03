@@ -7,6 +7,7 @@ source: chatgpt
 priority: critical
 status: active
 topic: example
+scope: [global]
 repeat_error_count: 1
 supersedes: []
 ---

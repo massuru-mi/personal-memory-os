@@ -54,6 +54,8 @@ def write_memory_event(vault_root: Path, event: MemoryEvent) -> Path:
         "topic": event.topic,
         "supersedes": event.supersedes,
     }
+    if event.scope:
+        front["scope"] = event.scope
     if front.keys() & event.metadata.keys():
         raise ValidationError("metadata must not override canonical fields")
     front.update(event.metadata)
@@ -81,6 +83,8 @@ def write_correction(vault_root: Path, correction: CorrectionEvent) -> Path:
         "repeat_error_count": correction.repeat_error_count,
         "supersedes": correction.supersedes,
     }
+    if correction.scope:
+        front["scope"] = correction.scope
     body = f"## Wrong assumption\n{correction.wrong.strip()}\n\n## Correct understanding\n{correction.correct.strip()}"
     if correction.trigger:
         body += f"\n\n## Trigger\n{correction.trigger.strip()}"

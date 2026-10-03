@@ -96,10 +96,11 @@ Corrections outrank ordinary memory and are rendered into `GUARDRAILS.md`.
 
 Match the semantics of the current PMO implementation:
 
-- `GUARDRAILS.md`: active corrections, strongest priority first, including correction body, priority, repeat count, and source reference.
+- `GUARDRAILS.md`: active corrections grouped by scope — a `## Global` section first (records with `scope: [global]` or no scope), then one `## <category>` section per category in alphabetical order; within each section strongest priority first, including correction body (its `##` headings demoted to `####`), priority, repeat count, and source reference. A correction with several categories appears in each.
 - `MEMORY.md`: eligible active memory grouped by memory `type`, with topic/inference labels and source references.
 - `NOW.md`: eligible active records of type `project_progress`, `open_loop`, `current_focus`, or `decision` whose `created_at` falls within `views.now_window_days`; newest first.
-- `INDEX.md`: core navigation plus counts from canonical memory records and corrections.
+- `INDEX.md`: core navigation plus counts from canonical memory records and corrections, and a `## Categories` section listing every category in use (counts roll up to parent categories) with memory, correction and recent counts.
+- `MEMORY.md` items with a category scope end their text with `{category, …}`.
 
 Do not summarize away a canonical record so aggressively that the view can no longer identify its source. Preserve a stable source reference or canonical ID/link for each rendered memory item when the connector representation permits it.
 

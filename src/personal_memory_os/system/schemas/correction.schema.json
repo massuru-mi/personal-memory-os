@@ -3,18 +3,78 @@
   "$id": "https://personal-memory-os.local/schema/correction-v1.json",
   "title": "PMO Correction v1",
   "type": "object",
-  "required": ["schema", "id", "type", "created_at", "source", "priority", "status", "repeat_error_count"],
+  "required": [
+    "schema",
+    "id",
+    "type",
+    "created_at",
+    "source",
+    "priority",
+    "status",
+    "repeat_error_count"
+  ],
   "properties": {
-    "schema": {"const": "pmo.correction/v1"},
-    "id": {"type": "string", "minLength": 1},
-    "type": {"const": "correction"},
-    "created_at": {"type": "string", "format": "date-time"},
-    "source": {"type": "string", "minLength": 1},
-    "topic": {"type": ["string", "null"]},
-    "supersedes": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "priority": {"enum": ["low", "normal", "high", "critical"]},
-    "status": {"enum": ["active", "superseded", "archived"]},
-    "repeat_error_count": {"type": "integer", "minimum": 1}
+    "schema": {
+      "const": "pmo.correction/v1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "const": "correction"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topic": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "supersedes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "priority": {
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "critical"
+      ]
+    },
+    "status": {
+      "enum": [
+        "active",
+        "superseded",
+        "archived"
+      ]
+    },
+    "repeat_error_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "\"global\" or category paths such as \"digital/video-editing\". Missing means global."
+    }
   },
   "additionalProperties": true
 }

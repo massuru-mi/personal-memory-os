@@ -35,6 +35,7 @@ def ingest_turn(vault_root: Path, payload: dict[str, Any]) -> dict[str, list[str
             confidence=item.get("confidence", 1.0),
             explicitness=item.get("explicitness", "explicit"),
             supersedes=item.get("supersedes", []),
+            scope=item.get("scope") or [],
         )
         created.append(str(write_memory_event(vault_root, event)))
 
@@ -52,6 +53,7 @@ def ingest_turn(vault_root: Path, payload: dict[str, Any]) -> dict[str, list[str
             repeat_error_count=item.get("repeat_error_count", 1),
             supersedes=item.get("supersedes", []),
             trigger=item.get("trigger"),
+            scope=item.get("scope") or [],
         )
         corrections_created.append(str(write_correction(vault_root, correction)))
 

@@ -55,6 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--importance", type=float, default=0.7)
     p.add_argument("--confidence", type=float, default=1.0)
     p.add_argument("--explicitness", choices=["explicit", "inferred"], default="explicit")
+    p.add_argument("--scope", action="append", default=[], help="\"global\" or a category path such as digital/video-editing; repeatable (default: global)")
 
     p = sub.add_parser("correct", help="Append a high-priority user correction")
     p.add_argument("vault")
@@ -64,6 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--topic")
     p.add_argument("--priority", choices=["low", "normal", "high", "critical"], default="critical")
     p.add_argument("--trigger", help="Situation in which this correction applies")
+    p.add_argument("--scope", action="append", default=[], help="\"global\" or a category path such as digital/video-editing; repeatable (default: global)")
 
     p = sub.add_parser("ingest-turn", help="Ingest a provider-neutral AI turn JSON payload")
     p.add_argument("vault")
@@ -135,6 +137,7 @@ def run(args: argparse.Namespace) -> object:
             topic=args.topic,
             confidence=args.confidence,
             explicitness=args.explicitness,
+            scope=args.scope,
         )
         path = write_memory_event(root, event)
         rebuild_views(root)
@@ -151,6 +154,7 @@ def run(args: argparse.Namespace) -> object:
             topic=args.topic,
             priority=args.priority,
             trigger=args.trigger,
+            scope=args.scope,
         )
         path = write_correction(root, event)
         rebuild_views(root)
