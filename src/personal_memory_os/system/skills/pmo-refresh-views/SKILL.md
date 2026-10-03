@@ -79,17 +79,16 @@ If validation fails, stop before replacing any generated view and report the mal
 
 ### 3. Resolve the active sets
 
-For each record kind:
+For memory records, apply the confidence filter **before** resolving supersession:
 
-- collect all IDs referenced by `supersedes`;
-- exclude any record whose ID is superseded;
-- from the remaining records, include only `status: active`.
+1. keep explicit records, and inferred records only when confidence is at least `memory.inferred_memory_min_confidence`;
+2. from that eligible set, collect all IDs referenced by `supersedes`;
+3. exclude any eligible record whose ID is superseded;
+4. from the remaining records, include only `status: active`.
 
-For memory views:
+An inferred record below the threshold must not hide the record it claims to supersede. Label included inferred memory with its confidence.
 
-- always retain eligible explicit records;
-- include inferred records only when confidence is at least `memory.inferred_memory_min_confidence`;
-- label included inferred memory with its confidence.
+For corrections, apply steps 2–4 to all correction records (no confidence filter).
 
 Corrections outrank ordinary memory and are rendered into `GUARDRAILS.md`.
 
