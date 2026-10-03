@@ -83,3 +83,17 @@ def test_remember_and_repair_skills_are_deployed_and_referenced():
     assert "pmo backup" in repair
     assert "content-preserving" in repair
     assert "--force-system-drift" in repair and "explicit approval" in repair
+
+
+def test_update_and_organize_skills_are_deployed_and_referenced():
+    start = read_system_text("START_HERE.md")
+    for name in ("pmo-update", "pmo-organize"):
+        repo_skill = (REPO_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert repo_skill == read_system_text(f"skills/{name}/SKILL.md")
+        assert f"_system/skills/{name}/SKILL.md" in start
+    update = read_system_text("skills/pmo-update/SKILL.md")
+    assert "Never downgrade" in update
+    assert "--no-backup" in update and "--force-system-drift" in update
+    organize = read_system_text("skills/pmo-organize/SKILL.md")
+    assert "Propose first" in organize
+    assert "Never edit, delete or rename an existing canonical record" in organize
