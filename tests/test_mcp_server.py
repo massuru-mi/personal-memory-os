@@ -103,7 +103,7 @@ def test_mcp_server_exposes_tools_and_instructions(vault: Path):
         async with Client(build_server(vault)) as client:
             names = {tool.name for tool in (await client.list_tools()).tools}
             assert names == {
-                "pmo_bootstrap", "pmo_search", "pmo_read_file", "pmo_record_memory",
+                "pmo_bootstrap", "pmo_category_context", "pmo_search", "pmo_read_file", "pmo_record_memory",
                 "pmo_record_correction", "pmo_rebuild", "pmo_doctor",
             }
             assert client.instructions == INSTRUCTIONS

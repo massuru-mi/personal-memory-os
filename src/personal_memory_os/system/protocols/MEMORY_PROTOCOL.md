@@ -45,6 +45,16 @@ Canonical memory is append-oriented. Create a new file in `10_Memory/Events/` us
 
 Required fields: `id`, `type`, `created_at`, `source`, `importance`, `confidence`, `explicitness`, `status`.
 
+## Scope (global or category)
+
+Every memory event and correction may carry `scope`, a list saying where it applies:
+
+- `[global]` — applies to every conversation. Use it for how the assistant should behave in general (language, tone, honesty, how to check facts) and for core facts about the user.
+- one or more category paths such as `[digital/video-editing]` or `[daily-life/health, family]` — applies only when the conversation is in that category or a sub-category of it. A record in a parent category (`digital`) also applies to its children (`digital/video-editing`).
+- no `scope` — treated as global (older records).
+
+Categories are not predefined. They are whatever paths the user's records use: reuse an existing category when one fits (see the Categories section of `INDEX.md`), create a new path when none fits, and prefer the broader parent when unsure. Category names may be in any language; keep them short and consistent. Narrow, rarely relevant items belong in a category, not in global, so they are not loaded in every conversation.
+
 Use `supersedes` when the user explicitly changes a prior fact, preference or decision. Preserve history rather than deleting the old event.
 
 `memory.inferred_memory_min_confidence` controls whether intentionally created inferred records appear in generated views; it is not permission to auto-create inferred memory.

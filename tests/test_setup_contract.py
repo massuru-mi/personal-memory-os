@@ -106,3 +106,18 @@ def test_agent_entrypoints_point_to_start_here():
     assert "_config/custom_rules.md" in agents
     assert read_system_text("entrypoints/CLAUDE.vault.md").strip() == "@AGENTS.md"
     assert "_config/custom_rules.md" in read_system_text("START_HERE.md")
+
+
+def test_scope_rules_are_documented_for_every_writer():
+    start = read_system_text("START_HERE.md")
+    assert "Global" in start and "category" in start
+    memory_protocol = read_system_text("protocols/MEMORY_PROTOCOL.md")
+    assert "## Scope (global or category)" in memory_protocol
+    assert "Categories are not predefined" in memory_protocol
+    assert "scope" in read_system_text("protocols/CORRECTION_PROTOCOL.md")
+    for name in ("memory-event.md", "correction.md"):
+        assert "scope: [global]" in read_system_text(f"templates/{name}")
+    for name in ("pmo-remember", "pmo-organize", "pmo-refresh-views"):
+        repo_skill = (REPO_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert repo_skill == read_system_text(f"skills/{name}/SKILL.md")
+        assert "scope" in repo_skill

@@ -72,6 +72,7 @@ AI はこうした依頼を、ドライブ上の手順書（`_system/skills/`）
 | Claude アプリからの初期設定 | 手順書はあるが、未確認 |
 | 記憶と訂正の保存 | 使える。手順書 [`pmo-remember`](skills/pmo-remember/SKILL.md) あり |
 | 訂正に「どんな場面で効くか」（Trigger）を付ける | 使える。GUARDRAILS に表示される |
+| 訂正と記憶を分野ごとに分ける（global／分野） | 使える。分野は記録から自動で集まり、必要に応じて増える。MCP では global だけを毎回読み込み、分野の分は話題が合ったときに読み込む |
 | 記憶の整理（重複・矛盾・終わった用事） | 使える。手順書 [`pmo-organize`](skills/pmo-organize/SKILL.md) あり。提案して、了承されたものだけ反映 |
 | 壊れた記録の点検と修復 | 使える。手順書 [`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md) あり。意味を変えない修復だけを自動で行う |
 | Claude Code・Codex からの利用 | 使える。PMO フォルダで起動すると `AGENTS.md`（`CLAUDE.md`）を自動で読み、`pmo` コマンドで記録する |

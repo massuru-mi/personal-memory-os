@@ -35,6 +35,9 @@ Then read the active records (`10_Memory/Events/`, `10_Memory/Corrections/`) and
 | Stale items | `open_loop` or `current_focus` older than `views.now_window_days` that may be done or no longer relevant |
 | Weak inferences | `explicitness: inferred` records, especially low `confidence` |
 | Missing triggers | corrections whose situation is clear from the text but that have no `## Trigger` |
+| Unscoped or mis-scoped records | records without `scope` (treated as global), and global records that only matter in one subject — propose a category |
+| Categories to split | a category with many records, or many recent records in one sub-area (see Categories in `INDEX.md`, "recent" counts) — propose a sub-category, e.g. `digital` → `digital/video-editing` |
+| Categories to merge or rename | tiny categories, near-duplicate names (`health` / `daily-life/health`) |
 
 Without the CLI, list and read the same folders through the connector and look for the same candidates.
 
@@ -59,6 +62,7 @@ Write each change with `_system/skills/pmo-remember/SKILL.md`:
 | Retire an item (done, no longer true) | one memory event with `status: archived`, the same `type`, content stating what is retired and why, `supersedes: [the retired ID]` — it hides itself and the old record from the views |
 | Confirm an inference | one explicit memory event with the user's wording, `supersedes: [the inferred ID]` |
 | Add a missing trigger | one new correction with the same wrong/correct text plus `## Trigger`, `supersedes: [the old correction ID]` |
+| Set or change a scope (classify, split, merge, rename a category) | for each affected record, a new record with the same content and fields and the new `scope`, `supersedes: [its old ID]` |
 
 With the CLI, submit records that need `supersedes` or `status` through `pmo ingest-turn` (see the pmo-remember skill). Then run `pmo rebuild`.
 

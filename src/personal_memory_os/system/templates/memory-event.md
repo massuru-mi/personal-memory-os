@@ -9,6 +9,7 @@ confidence: 1.0
 explicitness: explicit
 status: active
 topic: example
+scope: [global]
 supersedes: []
 ---
 

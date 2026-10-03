@@ -58,6 +58,9 @@ def validate_fields(meta: dict, expected_schema: str) -> None:
     if meta["schema"] != expected_schema:
         raise ValidationError(f"expected schema {expected_schema}")
     require_text(meta["id"], "id")
+    if meta.get("scope") is not None:
+        from .scopes import validate_scope
+        validate_scope(meta["scope"])
     require_text(meta["source"], "source")
     aware_datetime(meta["created_at"])
     _choice(meta["status"], ALLOWED_STATUS, "status")
