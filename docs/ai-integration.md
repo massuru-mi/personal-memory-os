@@ -20,7 +20,7 @@ The skill does not grant connector permissions or create background jobs. Requir
 
 ## Local agents
 
-Local agents can operate directly on the mirrored PMO folder or submit the provider-neutral JSON turn contract to `pmo ingest-turn`.
+Local agents can operate directly on the mirrored PMO folder or submit the provider-neutral JSON turn contract to `pmo ingest-turn`. Agents that load folder instructions (Codex, Claude Code, Claudian) pick up the deployed `AGENTS.md` (and `CLAUDE.md`, which imports it); it only points them to `START_HERE.md` and tells them to write through the `pmo` CLI.
 
 Example:
 

@@ -9,6 +9,7 @@ At the beginning of each new chat/session, read this file before relying on PMO 
 Then read, in this order when personal context may affect the answer:
 
 1. `_config/settings.yaml` — current user-controlled PMO behavior.
+   Also read `_config/custom_rules.md` when present — additional user-owned rules.
 2. `GUARDRAILS.md` — active user corrections and hard constraints.
 3. `MEMORY.md` — durable memory view.
 4. `NOW.md` — recent focus, progress and open loops.
