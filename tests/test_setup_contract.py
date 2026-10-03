@@ -97,3 +97,12 @@ def test_update_and_organize_skills_are_deployed_and_referenced():
     organize = read_system_text("skills/pmo-organize/SKILL.md")
     assert "Propose first" in organize
     assert "Never edit, delete or rename an existing canonical record" in organize
+
+
+def test_agent_entrypoints_point_to_start_here():
+    agents = read_system_text("entrypoints/AGENTS.vault.md")
+    assert "START_HERE.md" in agents
+    assert "pmo record" in agents and "pmo correct" in agents
+    assert "_config/custom_rules.md" in agents
+    assert read_system_text("entrypoints/CLAUDE.vault.md").strip() == "@AGENTS.md"
+    assert "_config/custom_rules.md" in read_system_text("START_HERE.md")

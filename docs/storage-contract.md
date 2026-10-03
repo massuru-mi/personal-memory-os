@@ -2,7 +2,7 @@
 
 ## System-owned
 
-`START_HERE.md` and `_system/**` are deployment-owned. Manual edits are detected as drift. User customizations belong in `_config/custom_rules.md`.
+`START_HERE.md`, `AGENTS.md`, `CLAUDE.md` and `_system/**` are deployment-owned. Manual edits are detected as drift. A pre-existing user `AGENTS.md` or `CLAUDE.md` is never overwritten; install/update leaves it in place and reports it under `skipped_existing`. User customizations belong in `_config/custom_rules.md`, which install creates once and updates never overwrite.
 
 ## User-owned
 
