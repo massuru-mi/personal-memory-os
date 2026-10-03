@@ -19,10 +19,21 @@ def test_install_creates_owned_and_private_layers(tmp_path: Path):
     assert detect_drift(vault) == []
 
 
+def test_install_does_not_create_unused_note_folders(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    for name in ("20_Projects", "30_Knowledge", "40_Decisions"):
+        assert not (vault / name).exists()
+        assert f"[[{name}]]" not in (vault / "INDEX.md").read_text(encoding="utf-8")
+    for name in ("00_Inbox", "50_Daily", "80_Archive"):
+        assert (vault / name).is_dir()
+
+
 def test_update_preserves_data_and_config(tmp_path: Path):
     vault = tmp_path / "vault"
     install(vault)
     private = vault / "20_Projects" / "private.md"
+    private.parent.mkdir()
     private.write_text("secret\n", encoding="utf-8")
     settings = vault / "_config" / "settings.yaml"
     text = settings.read_text(encoding="utf-8").replace("importance_threshold: 0.6", "importance_threshold: 0.42")
