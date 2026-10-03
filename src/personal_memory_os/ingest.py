@@ -50,6 +50,7 @@ def ingest_turn(vault_root: Path, payload: dict[str, Any]) -> dict[str, list[str
             status=item.get("status", "active"),
             repeat_error_count=item.get("repeat_error_count", 1),
             supersedes=item.get("supersedes", []),
+            trigger=item.get("trigger"),
         )
         corrections_created.append(str(write_correction(vault_root, correction)))
 

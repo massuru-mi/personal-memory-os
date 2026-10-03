@@ -63,6 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--source", default="cli")
     p.add_argument("--topic")
     p.add_argument("--priority", choices=["low", "normal", "high", "critical"], default="critical")
+    p.add_argument("--trigger", help="Situation in which this correction applies")
 
     p = sub.add_parser("ingest-turn", help="Ingest a provider-neutral AI turn JSON payload")
     p.add_argument("vault")
@@ -142,6 +143,7 @@ def run(args: argparse.Namespace) -> object:
             source=args.source,
             topic=args.topic,
             priority=args.priority,
+            trigger=args.trigger,
         )
         path = write_correction(root, event)
         rebuild_views(root)

@@ -16,3 +16,6 @@ Concise incorrect understanding.
 
 ## Correct understanding
 What the user actually meant.
+
+## Trigger
+Optional. The situation in which this correction applies. Omit the section if unknown.
