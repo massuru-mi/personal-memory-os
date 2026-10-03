@@ -12,8 +12,8 @@ Set up Personal Memory OS from the repository into a user-approved Google Drive 
 Start your first reply, before reading the repository or touching Drive, with a short notice in the user's language. For a Japanese-speaking user, for example:
 
 ```text
-PMO のセットアップを始めます。ファイル数が多いため、5 分以上かかることがあります。
-途中で返答が止まってしまった場合は「続けて」と送ってください。作ったものを確認し、続きから再開します（重複して作ることはありません）。
+PMO のセットアップを始めます。複数ステップの作業なので、段階ごとに進捗をお伝えします。
+途中で返答が途切れた場合は「続けて」と送ってください。作ったものを確認し、続きから再開します（重複して作ることはありません）。
 ```
 
 Then report progress in one short line at the start of each phase (for example "Phase 3/6: System ファイルを配置中"), so that an interrupted run can be resumed from the conversation.
@@ -67,8 +67,9 @@ A search-only connection or native Google Docs editing alone is insufficient.
 Check these **only after the destination is approved, and only inside it**:
 
 1. Create the approved destination folder if it does not exist (this checks folder creation).
-2. Create exactly one check file with the fixed name `.pmo-setup-check.md` directly inside the destination, read it back, then delete it.
-3. If the check file cannot be deleted, continue only if everything else works, and tell the user its exact name and location so they can delete it; never create a second check file.
+2. List the destination before creating the check file. If `.pmo-setup-check.md` already exists, treat it as pre-existing user content: do not modify or delete it, report the collision, and do not create a second check file. Continue only if the setup's required create/readback operations can be verified safely through the actual setup writes; deletion remains unverified.
+3. Otherwise create exactly one check file with the fixed name `.pmo-setup-check.md` directly inside the destination, read it back, then delete it.
+4. If a setup-created check file cannot be deleted, continue only if everything else works, and tell the user its exact name and location so they can delete it; never create a second check file.
 
 Do not create check or temporary files anywhere else, and do not create them before the destination is approved.
 
@@ -119,7 +120,7 @@ At minimum read back and inspect:
 
 Also verify that the expected adapter, protocol, schema, and template directories are populated.
 
-Confirm that `.pmo-setup-check.md` is gone (or was reported to the user) and that nothing was created outside the destination. Never remove files that existed before setup.
+Confirm that a setup-created `.pmo-setup-check.md` is gone (or its location was reported to the user). If the name was already occupied by a pre-existing file, confirm it was left untouched and the collision was reported. Also confirm that nothing was created outside the destination. Never remove files that existed before setup.
 
 ## Phase 6 — Return the runtime bootstrap
 
@@ -182,7 +183,7 @@ Only say "setup complete" when all applicable checks are true:
 - manifest exists and corresponds to deployed files;
 - Drive listing was re-checked;
 - important files were read back;
-- nothing was created outside the approved destination, and `.pmo-setup-check.md` is gone or its location was reported to the user;
+- nothing was created outside the approved destination, and any setup-created `.pmo-setup-check.md` is gone or its location was reported; if the name was pre-existing, it was left untouched and the collision was reported;
 - no pre-existing user data was destroyed.
 
 Otherwise report the completed subset and the specific remaining work.
