@@ -56,6 +56,8 @@ Priority = Literal["low", "normal", "high", "critical"]
 DEFAULT_MAX_CONTEXT_CHARS = 8000
 MIN_MAX_CONTEXT_CHARS = 1000
 ITEM_MAX_CHARS = 400
+# NOW only needs the gist ("in the other project you said …"); details come from the record or category.
+NOW_ITEM_MAX_CHARS = 150
 NOW_BUDGET_SHARE = 0.4
 
 
@@ -252,10 +254,10 @@ class PMOTools:
         now_items = [(meta, body, path) for _, meta, body, path in now]
         # NOW gets at most a share of the budget first so durable memory (preferences, facts) is never
         # crowded out by recent activity; whatever memory leaves unused flows back to NOW.
-        now_lines, rest = self._take(vault, now_items, int(budget * NOW_BUDGET_SHARE))
+        now_lines, rest = self._take(vault, now_items, int(budget * NOW_BUDGET_SHARE), NOW_ITEM_MAX_CHARS)
         budget -= int(budget * NOW_BUDGET_SHARE) - rest
         memory_lines, budget = self._take(vault, memory, budget)
-        more_now, budget = self._take(vault, now_items[len(now_lines):], budget)
+        more_now, budget = self._take(vault, now_items[len(now_lines):], budget, NOW_ITEM_MAX_CHARS)
         now_lines += more_now
         omitted = {"now": len(now) - len(now_lines), "memory": len(memory) - len(memory_lines)}
         result: dict[str, Any] = {
@@ -271,12 +273,12 @@ class PMOTools:
         return result
 
     @staticmethod
-    def _take(vault: Path, rows, budget: int) -> tuple[list[str], int]:
+    def _take(vault: Path, rows, budget: int, item_max: int = ITEM_MAX_CHARS) -> tuple[list[str], int]:
         lines: list[str] = []
         for meta, body, path in rows:
             text = " ".join(body.split())
-            if len(text) > ITEM_MAX_CHARS:
-                text = text[: ITEM_MAX_CHARS - 1] + "…"
+            if len(text) > item_max:
+                text = text[: item_max - 1] + "…"
             topic = f" [{meta['topic']}]" if meta.get("topic") else ""
             line = (
                 f"- ({meta.get('type')}) {text}{topic}{scope_label(meta)}{inference_label(meta)}"

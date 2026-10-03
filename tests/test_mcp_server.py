@@ -179,3 +179,15 @@ def test_recent_activity_does_not_crowd_out_durable_memory(vault: Path):
     assert "Answers in Japanese" in result["memory"]
     assert result["now"]
     assert result["omitted"]["now"] > 0
+
+
+def test_now_items_are_cut_shorter_than_memory_items(vault: Path):
+    tools = PMOTools(vault)
+    loop = tools.record_memory("open_loop", "n" * 1000)
+    tools.record_memory("knowledge", "k" * 1000)
+    result = tools.bootstrap()
+    now_line = result["now"].splitlines()[0]
+    memory_line = result["memory"].splitlines()[0]
+    assert "n" * 149 + "…" in now_line and "n" * 150 not in now_line
+    assert loop["path"] in now_line
+    assert "k" * 399 + "…" in memory_line
