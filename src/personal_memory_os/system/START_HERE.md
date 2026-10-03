@@ -10,10 +10,10 @@ Then read, in this order when personal context may affect the answer:
 
 1. `_config/settings.yaml` — current user-controlled PMO behavior.
    Also read `_config/custom_rules.md` when present — additional user-owned rules.
-2. `GUARDRAILS.md` — active user corrections and hard constraints.
-3. `MEMORY.md` — durable memory view.
+2. `GUARDRAILS.md` — active user corrections and hard constraints. Always apply the **Global** section. Apply a category section when the conversation is in that category or one of its sub-categories; several categories can apply at once.
+3. `MEMORY.md` — durable memory view. Items labelled with `{category}` matter only in that category.
 4. `NOW.md` — recent focus, progress and open loops.
-5. `INDEX.md` — navigation.
+5. `INDEX.md` — navigation, including the user's categories.
 6. Relevant canonical records and project/knowledge files when needed.
 
 Generated views are convenient context, not canonical data. When freshness or a conflict matters, inspect the relevant canonical records and latest corrections.
@@ -31,7 +31,7 @@ For other information:
 
 Canonical memory events belong under `10_Memory/Events/`; corrections belong under `10_Memory/Corrections/`. Preserve history with `supersedes` rather than rewriting old facts in place.
 
-To save a memory or correction, follow `_system/skills/pmo-remember/SKILL.md`. If records cannot be parsed, `pmo doctor` fails, or the user asks to check or repair PMO, follow `_system/skills/pmo-doctor-repair/SKILL.md`.
+Give each new memory or correction a `scope` (global or a category) as described in the Memory Protocol. To save a memory or correction, follow `_system/skills/pmo-remember/SKILL.md`. If records cannot be parsed, `pmo doctor` fails, or the user asks to check or repair PMO, follow `_system/skills/pmo-doctor-repair/SKILL.md`.
 When the user asks to organize or clean up their memory, follow `_system/skills/pmo-organize/SKILL.md`. To update the PMO System itself, follow `_system/skills/pmo-update/SKILL.md`.
 
 ## Daily behavior

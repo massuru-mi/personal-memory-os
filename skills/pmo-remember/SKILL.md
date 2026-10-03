@@ -26,15 +26,26 @@ Write one canonical PMO record per thing to remember. Records are append-only Ma
 
 Memory `type` is one of: `fact`, `preference`, `decision`, `project_progress`, `open_loop`, `current_focus`, `interest`, `relationship`, `knowledge`. Preferences and working style are `preference` events; there is no separate preferences folder.
 
+Choose a `scope` for every record:
+
+- `["global"]` only for how to behave in every conversation (language, tone, honesty) and core facts about the user;
+- otherwise the best matching category path, reusing an existing one (Categories in `INDEX.md`, or `categories` from the MCP bootstrap); create a new path such as `digital/video-editing` when none fits; use the broader parent when unsure; several categories are allowed.
+
+Narrow one-off corrections (one product, one appointment) belong in a category, not in global.
+
 For a correction, write `wrong` and `correct` in the user's terms. Add a `trigger` (the situation in which the correction applies) only when the user's correction makes it clear; do not invent a broader one. Use `priority: critical` for direct user corrections. Follow `_system/protocols/CORRECTION_PROTOCOL.md` for repeated errors.
 
-## 2. Preferred path: the pmo CLI
+## 2. Preferred path: PMO MCP tools or the pmo CLI
+
+If the PMO MCP tools are available, use `pmo_record_memory` / `pmo_record_correction` (they take the same fields, including `scope`, `supersedes` and `status`).
+
+Otherwise, with the CLI:
 
 Use this when a shell with the installed `pmo` CLI and the PMO folder is available.
 
 ```bash
-pmo record /path/to/PMO --type preference --content "Prefers concise answers in Japanese" --topic communication
-pmo correct /path/to/PMO --wrong "..." --correct "..." --topic claude-code --trigger "When advising on Claude Code features"
+pmo record /path/to/PMO --type preference --content "Prefers concise answers in Japanese" --topic communication --scope global
+pmo correct /path/to/PMO --wrong "..." --correct "..." --topic claude-code --trigger "When advising on Claude Code features" --scope digital/claude-code
 ```
 
 Other `pmo record` options: `--importance` (0–1), `--explicitness inferred --confidence <0–1>`, `--source <assistant name>`.
@@ -57,7 +68,7 @@ Use this only when the CLI is unavailable (for example a cloud assistant writing
 
 1. Read the template: `_system/templates/memory-event.md` or `_system/templates/correction.md`.
 2. Build the ID: `mem-YYYYMMDDTHHMMSS-<8 lowercase hex>` or `correction-YYYYMMDDTHHMMSS-<8 lowercase hex>`, using the vault timezone from `_config/settings.yaml`. The file name is the ID in lowercase plus `.md` (the CLI does the same).
-3. Fill every frontmatter field the template shows. `created_at` must include a timezone offset. Do not add fields the template and protocol do not define.
+3. Fill every frontmatter field the template shows, including `scope`. `created_at` must include a timezone offset. Do not add fields the template and protocol do not define.
 4. Body:
    - memory event: the memory content after the closing `---`;
    - correction: `## Wrong assumption`, `## Correct understanding`, and optionally `## Trigger`, each with non-empty text. Never put these in frontmatter.
