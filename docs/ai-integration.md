@@ -51,3 +51,7 @@ Example:
 ## Native provider memory
 
 Provider-native memory can coexist, but PMO treats it as supplementary rather than canonical user memory. When the two conflict, explicit user correction and canonical PMO data win.
+
+## MCP
+
+`pmo mcp` exposes PMO's deterministic operations as MCP tools (bootstrap, search, read, record memory, record correction, rebuild, doctor) and sends short server instructions to the client. Registering it at user scope makes every new session PMO-aware; disabling or removing the server turns PMO off for that session or project without editing any instruction file. Writes are append-only and validated; Markdown in the vault remains canonical. See [docs/mcp.ja.md](mcp.ja.md).

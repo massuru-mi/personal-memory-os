@@ -82,6 +82,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("vault")
     p.add_argument("--output")
 
+    p = sub.add_parser("mcp", help="Serve PMO tools over MCP (stdio). Requires personal-memory-os[mcp]")
+    p.add_argument("--vault", help="PMO vault path (default: $PMO_VAULT)")
+
     p = sub.add_parser("duplicates", help="Report exact duplicate memory events")
     p.add_argument("vault")
     return parser
@@ -170,6 +173,8 @@ def run(args: argparse.Namespace) -> object:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "mcp":
+        return _serve_mcp(args.vault)
     try:
         result = run(args)
         _emit(result, args.json)
@@ -180,6 +185,19 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def _serve_mcp(vault: str | None) -> int:
+    # stdout carries the MCP protocol, so nothing else may be printed there.
+    try:
+        from .mcp_server import resolve_vault, serve
+        serve(resolve_vault(vault))
+    except ModuleNotFoundError as exc:
+        if exc.name and exc.name.split(".")[0] == "mcp":
+            print("error: MCP support is not installed. Install personal-memory-os[mcp].", file=sys.stderr)
+            return 1
+        raise
+    return 0
 
 
 if __name__ == "__main__":
