@@ -68,7 +68,7 @@ Malformed files cannot be parsed and are not reflected in generated views. When 
 
 - `_system/**`: read-only to ordinary AI operation. Updated only by PMO deployment/update.
 - `_config/**`: user-owned. Write only when the user explicitly asks to change PMO configuration.
-- Data directories (`00_Inbox`, `10_Memory`, `20_Projects`, `30_Knowledge`, `40_Decisions`, `50_Daily`, `80_Archive`): read/write only according to protocol and config.
+- Data directories (`00_Inbox`, `10_Memory`, `50_Daily`, `80_Archive`): read/write only according to protocol and config. Projects, knowledge and decisions are memory events distinguished by `type` and `scope`, not separate folders. Any other folder in the vault is the user's own and is not read or written by PMO unless the user asks.
 - Generated root views: derived, never canonical.
 
 Read `_system/protocols/` for normative details. If required Drive operations are unavailable, state what could and could not be completed; never claim an unread file was read or an unwritten record was saved.

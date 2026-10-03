@@ -155,9 +155,6 @@ PMO/
 ├─ 10_Memory/
 │  ├─ Events/           # 記憶（1 件 1 ファイル。好み・事実・決定などは種類で区別）
 │  └─ Corrections/      # 訂正（1 件 1 ファイル）
-├─ 20_Projects/
-├─ 30_Knowledge/
-├─ 40_Decisions/
 ├─ 50_Daily/            # 会話ログ（有効にした場合）
 └─ 80_Archive/
 ```
