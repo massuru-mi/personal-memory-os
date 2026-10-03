@@ -10,7 +10,7 @@ ChatGPT、Claude、Geminiなど、私たちが日常的に使うAIは増え続�
 
 Personal Memory OS（PMO）は、**AIとは独立した、ユーザー自身が所有する共通のMemory Layer**を作るプロジェクトです。記憶の原本を私有ストレージのMarkdownとして保ち、利用するAIが変わっても持ち運べることを目指します。
 
-> 現在は初期開発段階です。MarkdownのプロトコルとPython CLIを実装しています。ChatGPT・Claudeアプリからのクラウド初期構築や、会話を通じたクラウド上の一覧更新は設計段階です。以下の将来像と、[現在使える機能](#現在使える機能と開発中の機能)を分けてご覧ください。
+> 現在は初期開発段階です。Markdownのプロトコル、Python CLI、AIがGoogle Driveへ初期構築するためのセットアップSKILLを実装しています。アプリごとに利用できるDrive操作は異なり、AI間のE2E検証は継続中です。以下の将来像と、[現在使える機能](#現在使える機能と開発中の機能)を分けてご覧ください。
 
 ## なぜObsidianだけではないのか
 
@@ -34,7 +34,7 @@ ChatGPT / Claude / Gemini / Codex / Claude Code
 
 ## なぜOSSなのか
 
-AIを使ったSecond Brainを作ろうとすると、記憶を保存する以外にも、多くの設計が必要になります。
+AIを使った個人メモリ基盤を作ろうとすると、記憶を保存する以外にも、多くの設計が必要になります。
 
 - どんなフォルダ構成にして、何を長期記憶として残すか。
 - AIの推測をどこまで記憶してよいか。
@@ -45,7 +45,7 @@ AIを使ったSecond Brainを作ろうとすると、記憶を保存する以外
 
 これらを一人ひとりがゼロから設計し、同じ問題を繰り返し解決する必要はないと考えています。
 
-**一度誰かが解決したSecond Brainの基盤部分を、次の人がもう一度作り直さなくてよいようにする。** それがPMOをOSSとして公開する目的の一つです。
+**一度誰かが解決した個人メモリ基盤の共通部分を、次の人がもう一度作り直さなくてよいようにする。** それがPMOをOSSとして公開する目的の一つです。
 
 各ユーザーのMemoryそのものはPrivateなストレージに残します。GitHubで共有するのは、Memoryを扱うためのProtocol、Schema、Template、Updater、Migrationなどの「仕組み」です。
 
@@ -75,20 +75,20 @@ ChatGPTで保存した記憶をClaudeも利用できる。将来別のAIへ乗�
 
 自動保存はユーザーが選ぶ運用です。初期方針の案は「明示的な保存・訂正の指示は実行、それ以外は会話中に更新候補を提案」。必要に応じて、承諾した範囲の自動保存やDaily記録を有効にします。
 
-## ローカル実行も、定期実行も任意に
+## AI＋Google Driveで始める
 
-目標は、ユーザーのPCにPythonや同期ソフトを設定しなくても、次の流れで始められることです。
+ユーザーのPCへPythonや同期ソフトを導入しなくても、対応するAIからPMOを初期構築できます。AI向けの正式な初期設定手順は [`skills/pmo-setup/SKILL.md`](skills/pmo-setup/SKILL.md) です。
 
-1. **ChatGPTまたはClaudeアプリ**に、GitHubの公開済みセットアップ手順を読んでもらう。
-2. そのアプリのGoogle Drive接続を使い、私有フォルダにPMOを初期構築する。
-3. 読み戻して確認した保存先リンクと、アプリの指示設定へ貼る文章を受け取る。
-4. 「これを覚えて」「前の記憶を訂正して」「最近の記憶を整理して」と会話で使う。
+1. ChatGPT、Claudeなど、GitHubとGoogle Driveを扱えるAIにセットアップSKILLを読ませてPMOの初期設定を依頼します。
+2. **Driveへ最初に書き込む前に、セットアップAIは保存先についてユーザーの承認を得ます。** ユーザーが依頼時に保存先フォルダやパスを指定済みなら、それを承認として扱います。指定がなければ `マイドライブ/PMO` を既定候補として提示し、了承を得てから作成します。
+3. セットアップAIは対象versionとcommitを固定し、現在の `pmo install` と同等のSystem／Config／Data構造を、承認された保存先へ配置します。
+4. 配置後にDriveを再一覧・読み戻しし、確認済みのPMOフォルダURL、`START_HERE.md` URL、そのAI向けの最小カスタム指示を提示します。
 
-ChatGPTにはカスタム指示、Claudeにはプロフィール指示またはプロジェクト指示を提示する設計です。もう一方のAIを追加しても、同じvaultを参照し、記憶を作り直さないようにします。Claudeアプリからの利用にClaude Codeを必須にはしません。
+標準のルートフォルダ名は **`PMO`** です。運用ルールの詳細をカスタム指示へ複製せず、配置された `START_HERE.md`、Protocol、Configを正本にします。カスタム指示は「各新規チャットの開始時にSTART_HEREを読む」ための薄いブートストラップだけにします。
 
-`MEMORY.md`などの編集を頼んだ場合も、原本へ追加・訂正してから一覧へ反映します。後からCLIで再生成しても変更が消えないようにするためです。定期実行がなくても、会話中の指示や受け入れられた更新提案で保守できる設計にします。
+セットアップSKILLを読ませただけでDrive権限やバックグラウンド自動処理が有効になるわけではありません。必要なDrive操作を実行できない場合、AIは完了したように装わず未完了項目を報告します。
 
-**このクラウド経路は未実装・実機未検証です。** アプリごとに、通常ファイルの作成・内容更新・読み戻しができる接続が必要です。指示文を貼るだけで接続や自動処理が有効になるわけではありません。詳細は[クラウド運用の仕様案](docs/local-optional-design.ja.md)と[アプリ別の指示文案](docs/custom-instructions.ja.md)を参照してください。
+`MEMORY.md`などの生成ビューを編集する依頼では、原本へ追加・訂正してから可能な範囲でビューへ反映します。外部から原本を追加してもローカルFTS indexは自動更新されないため、CLI利用時は必要に応じて `pmo rebuild` を実行します。
 
 ## 現在使える機能と開発中の機能
 
@@ -101,8 +101,8 @@ ChatGPTにはカスタム指示、Claudeにはプロフィール指示または�
 | 会話ログ・日次要約 | ターン取り込みと、指定日の要約生成を実装 |
 | ローカル検索・重複検出・バックアップ | CLIで実行可能 |
 | System更新・Migration | 配置・変更検出・バックアップ・schema移行の基盤を実装。下記の既知課題あり |
-| ChatGPT／Claudeアプリからの初期構築 | 設計段階。接続・再開・読み戻しの実機検証が必要 |
-| クラウドでの記憶整理・更新提案・一覧更新 | 手順を設計中 |
+| ChatGPT／Claudeアプリからの初期構築 | `skills/pmo-setup/SKILL.md`を実装。各アプリでDriveの書き込み・読み戻し能力を実行時に確認する |
+| クラウドでの記憶整理・更新提案・一覧更新 | 運用ルールは`START_HERE.md`へ集約。実際の書き込み・再生成能力は接続機能に依存 |
 | Geminiなど他のAIとの連携 | 共通プロトコルを利用する将来の接続対象。動作保証なし |
 | 全AIでの自動記憶・バックグラウンド処理 | 提供していない。個別の連携と保存方針が必要 |
 
@@ -118,7 +118,7 @@ ChatGPTにはカスタム指示、Claudeにはプロフィール指示または�
 | Runtime | 検索DB・ロックなど | ローカルの使い捨て領域。同期vaultの外に置く |
 
 ```text
-SecondBrain/
+PMO/
 ├─ START_HERE.md
 ├─ SYSTEM_VERSION.md
 ├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # 再生成できる一覧
@@ -143,14 +143,14 @@ Python 3.11以上が必要です。このREADMEと`pyproject.toml`を含むブ�
 
 ```bash
 python -m pip install .
-pmo install /path/to/SecondBrain
-pmo record /path/to/SecondBrain --type preference --content "例：回答は簡潔な日本語がよい"
-pmo rebuild /path/to/SecondBrain
-pmo search /path/to/SecondBrain "回答は簡潔な日本語がよい"
-pmo doctor /path/to/SecondBrain
+pmo install /path/to/PMO
+pmo record /path/to/PMO --type preference --content "例：回答は簡潔な日本語がよい"
+pmo rebuild /path/to/PMO
+pmo search /path/to/PMO "回答は簡潔な日本語がよい"
+pmo doctor /path/to/PMO
 ```
 
-`/path/to/SecondBrain`は実際の保存先に置き換えます。Driveを使う場合、ローカルCLIには通常のファイルとして読み書きできるミラーが必要です。Obsidianで利用する場合も、この私有フォルダを開きます。
+`/path/to/PMO`は実際の保存先に置き換えます。Driveを使う場合、ローカルCLIには通常のファイルとして読み書きできるミラーが必要です。Obsidianで利用する場合も、この私有フォルダを開きます。
 
 その他のコマンド：
 
@@ -188,7 +188,7 @@ ruff check .
 
 - [アーキテクチャ](docs/architecture.md) / [ストレージ契約](docs/storage-contract.md)
 - [AI連携](docs/ai-integration.md) / [記憶プロトコル](docs/memory-protocol.md)
-- [クラウド運用の仕様案](docs/local-optional-design.ja.md) / [指示文案](docs/custom-instructions.ja.md)
+- [AIセットアップSKILL](skills/pmo-setup/SKILL.md) / [クラウド運用](docs/local-optional-design.ja.md) / [最小指示文](docs/custom-instructions.ja.md)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## ライセンス

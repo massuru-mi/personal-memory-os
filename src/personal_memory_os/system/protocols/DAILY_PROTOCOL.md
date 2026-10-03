@@ -1,20 +1,25 @@
 # Daily / Session Protocol v1
 
-The daily record is an activity log, not the canonical long-term memory store.
+The Daily record is an optional activity log, not the canonical long-term memory store.
 
-## One chat, one session file
-Each AI conversation owns exactly one session file under:
+## Enablement
+
+Do not create or update Daily files when `daily.enabled: false`.
+
+When Daily is enabled, each AI conversation owns one provider/session-specific session file under:
+
 `50_Daily/YYYY-MM-DD/<provider>_<session-id>_<topic>.md`
 
-Different providers/chats MUST NOT edit the same session file. This prevents Google Drive synchronization conflicts.
+Different providers/chats must not edit the same session file.
 
-Update the session after every meaningful turn. Keep it concise and cumulative under these sections:
+If `daily.update_on_every_meaningful_turn` is enabled, keep the session file concise and cumulative under:
+
 - What we did
 - What we learned
 - Decisions
 - Corrections
 - Open loops
 
-Do not paste the entire conversation transcript by default. Raw transcript archiving is optional and controlled by config.
+Do not paste the full conversation transcript by default. Raw transcript archiving is separately controlled by Config.
 
-`SUMMARY.md` is generated from session files and may be rebuilt at any time.
+`SUMMARY.md` is derived from session files and may be rebuilt. PMO does not create scheduled/background Daily updates by itself.
