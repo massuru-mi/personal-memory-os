@@ -108,3 +108,30 @@ def test_edited_agent_entrypoint_is_system_drift(tmp_path: Path):
     install(vault)
     (vault / "AGENTS.md").write_text("edited\n", encoding="utf-8")
     assert "modified:AGENTS.md" in detect_drift(vault)
+
+
+def test_manifest_protects_everything_except_system_and_views(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    manifest = json.loads((vault / "_system" / "SYSTEM_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["protected_paths"] == ["**"]
+    assert manifest["protected_paths_exclude"] == ["owned_files", "generated_views", "_system/SYSTEM_MANIFEST.json"]
+    assert set(manifest["generated_views"]) == {"MEMORY.md", "NOW.md", "GUARDRAILS.md", "INDEX.md", "SYSTEM_VERSION.md"}
+    assert not any(path.startswith(("_config/", "10_Memory/")) for path in manifest["owned_files"])
+
+
+def test_update_never_touches_legacy_or_user_folders(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    files = {
+        vault / "20_Projects" / "legacy.md": "legacy project note\n",
+        vault / "00_Inbox" / "MemoryCandidates" / "c.md": "candidate\n",
+        vault / "Notes" / "mine.md": "my own folder\n",
+        vault / "loose.md": "root file\n",
+    }
+    for path, text in files.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    update(vault, backup=False)
+    for path, text in files.items():
+        assert path.read_text(encoding="utf-8") == text

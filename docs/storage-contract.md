@@ -8,6 +8,8 @@
 
 `_config/**` and all Data directories are user-owned. The updater may migrate schema with backup, but must not blanket-replace them.
 
+More generally, everything in the vault that is not a System file listed in the manifest's `owned_files`, a generated view, or the manifest itself is user-owned — including folders created by older PMO versions and folders the user adds. The manifest records this as a rule (`protected_paths: ["**"]` with `protected_paths_exclude`) rather than a folder list, so it cannot drift from the folders PMO happens to create.
+
 Canonical memory lives in `10_Memory/Events/` (one file per memory event; preferences, facts, decisions and other kinds are distinguished by `type`) and `10_Memory/Corrections/`. Install no longer creates `10_Memory/Self`, `10_Memory/Preferences` or `10_Memory/Decisions`: nothing reads or writes them. Existing vaults may still contain these folders; they are user Data and are left in place, never deleted by PMO.
 
 Install also no longer creates `00_Inbox`, `20_Projects`, `30_Knowledge` or `40_Decisions`. Projects, knowledge and decisions are recorded as memory events (`type: project_progress`, `knowledge`, `decision`) and grouped by `scope`. Memory save proposals are made in the conversation and saved as events only when approved; there is no candidate queue. If these folders already exist, they remain user Data: still protected from updates and never deleted by PMO.
