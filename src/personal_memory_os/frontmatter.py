@@ -14,6 +14,8 @@ def dumps(frontmatter: dict[str, Any], body: str) -> str:
 
 
 def loads(text: str) -> tuple[dict[str, Any], str]:
+    # Cloud writers (e.g. ChatGPT via Drive) may emit a UTF-8 BOM and CRLF line endings.
+    text = text.removeprefix("﻿").replace("\r\n", "\n").replace("\r", "\n")
     if not text.startswith("---\n"):
         raise ValidationError("missing YAML frontmatter")
     end = text.find("\n---\n", 4)
