@@ -128,3 +128,11 @@ def test_scope_changes_are_in_place_in_rules_and_skills():
     organize = read_system_text("skills/pmo-organize/SKILL.md")
     assert "pmo set-scope" in organize and "pmo_set_scope" in organize
     assert "a new record with the same content and fields and the new `scope`" not in organize
+
+
+def test_organize_skill_intro_matches_in_place_scope_rule():
+    organize = read_system_text("skills/pmo-organize/SKILL.md")
+    head = organize.split("## Non-negotiable rules")[0]
+    assert "every accepted change is a new record" not in head
+    assert "apply only the accepted ones as new append-only records" not in head
+    assert "pmo set-scope" in head and "never by superseding" in head
