@@ -43,11 +43,7 @@ PMO/
 ├─ INDEX.md
 ├─ _system/
 ├─ _config/
-├─ 00_Inbox/
 ├─ 10_Memory/
-├─ 20_Projects/
-├─ 30_Knowledge/
-├─ 40_Decisions/
 ├─ 50_Daily/
 └─ 80_Archive/
 ```

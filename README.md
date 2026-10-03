@@ -138,13 +138,9 @@ PMO/
 ├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # rebuildable views
 ├─ _system/             # protocols, schemas, templates, skills
 ├─ _config/             # settings.yaml, custom_rules.md
-├─ 00_Inbox/
 ├─ 10_Memory/
 │  ├─ Events/           # one file per memory; preferences, facts, decisions… by type
 │  └─ Corrections/
-├─ 20_Projects/
-├─ 30_Knowledge/
-├─ 40_Decisions/
 ├─ 50_Daily/
 └─ 80_Archive/
 ```

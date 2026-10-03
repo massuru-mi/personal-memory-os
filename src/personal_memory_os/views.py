@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from .config import load_settings
-from .constants import DECISIONS_DIR, KNOWLEDGE_DIR, PROJECTS_DIR
 from .events import read_events
 from .io import atomic_write_text
 from .paths import VaultPaths
@@ -178,9 +177,6 @@ def render_index(vault_root: Path) -> Path:
         "- [[GUARDRAILS]]",
         "- [[MEMORY]]",
         "- [[NOW]]",
-        f"- [[{PROJECTS_DIR}]]",
-        f"- [[{KNOWLEDGE_DIR}]]",
-        f"- [[{DECISIONS_DIR}]]",
         "## Memory counts",
     ]
     for key, count in sorted(counts.items()):
