@@ -7,18 +7,30 @@ description: Safely initialize or attach Personal Memory OS (PMO) in a user-owne
 
 Set up Personal Memory OS from the repository into a user-approved Google Drive location. Treat the repository implementation as the source of truth and the user's existing Drive data as higher priority than setup convenience.
 
+## Before anything else — tell the user
+
+Start your first reply, before reading the repository or touching Drive, with a short notice in the user's language. For a Japanese-speaking user, for example:
+
+```text
+PMO のセットアップを始めます。ファイル数が多いため、5 分以上かかることがあります。
+途中で返答が止まってしまった場合は「続けて」と送ってください。作ったものを確認し、続きから再開します（重複して作ることはありません）。
+```
+
+Then report progress in one short line at the start of each phase (for example "Phase 3/6: System ファイルを配置中"), so that an interrupted run can be resumed from the conversation.
+
 ## Non-negotiable rules
 
 1. **Before the first Google Drive write, have a user-approved destination.**
    - If the user already supplied a Drive folder, path, or URL in the request, use that as approval.
    - Otherwise propose `My Drive/PMO` and ask for explicit approval or a different destination.
    - Do not create even a temporary setup folder before this condition is met.
-2. The standard new root folder name is `PMO`.
-3. Never delete, overwrite, rename, or move pre-existing user content merely to make setup easier.
-4. Do not infer the PMO layout from README alone. Inspect the current implementation.
-5. Do not report setup complete until the Drive copy has been listed and important files have been read back.
-6. Do not claim background synchronization, scheduled work, or connector permissions that do not exist.
-7. Do not copy provider-native memory or old chats into PMO unless the user separately requests a migration.
+2. **Never create anything outside the approved destination** — no test files, temporary files or folders in `My Drive` root or anywhere else. All capability checks happen inside the approved destination (see Phase 2).
+3. The standard new root folder name is `PMO`.
+4. Never delete, overwrite, rename, or move pre-existing user content merely to make setup easier.
+5. Do not infer the PMO layout from README alone. Inspect the current implementation.
+6. Do not report setup complete until the Drive copy has been listed and important files have been read back.
+7. Do not claim background synchronization, scheduled work, or connector permissions that do not exist.
+8. Do not copy provider-native memory or old chats into PMO unless the user separately requests a migration.
 
 ## Phase 1 — Pin the source
 
@@ -48,9 +60,17 @@ Confirm that the available Google Drive connection can:
 - create ordinary raw files such as `.md`, `.yaml`, and `.json`;
 - update file contents when needed;
 - read file contents back;
-- delete setup-created temporary files if temporary files are necessary.
+- delete a file it created.
 
 A search-only connection or native Google Docs editing alone is insufficient.
+
+Check these **only after the destination is approved, and only inside it**:
+
+1. Create the approved destination folder if it does not exist (this checks folder creation).
+2. Create exactly one check file with the fixed name `.pmo-setup-check.md` directly inside the destination, read it back, then delete it.
+3. If the check file cannot be deleted, continue only if everything else works, and tell the user its exact name and location so they can delete it; never create a second check file.
+
+Do not create check or temporary files anywhere else, and do not create them before the destination is approved.
 
 Then enforce the destination rule:
 
@@ -99,7 +119,7 @@ At minimum read back and inspect:
 
 Also verify that the expected adapter, protocol, schema, and template directories are populated.
 
-If temporary connection/upload test files were created by this setup, remove them before completion. Never remove files that existed before setup.
+Confirm that `.pmo-setup-check.md` is gone (or was reported to the user) and that nothing was created outside the destination. Never remove files that existed before setup.
 
 ## Phase 6 — Return the runtime bootstrap
 
@@ -124,6 +144,16 @@ PMOへの読み書きが必要な場合はGoogle Drive接続を使用してく�
 ```
 
 Use the app's appropriate persistent instruction surface. If you cannot change that setting directly, provide the text for the user to paste; do not claim it was registered.
+
+## Resuming after an interruption
+
+When the user says 「続けて」, "continue", or asks to resume a setup that stopped part-way:
+
+1. Do not start over and do not ask for the destination again if it was already approved in this conversation.
+2. Reuse the version and commit pinned earlier in the conversation. If they are not available, pin the source again and check that already deployed System files match it; if they do not, report the mismatch instead of mixing versions.
+3. List the destination and determine which phases are complete: directories, System files, Config, generated views, `SYSTEM_VERSION.md`, `_system/SYSTEM_MANIFEST.json`.
+4. Tell the user in one line where you are resuming from, then continue with the first incomplete phase. Create only what is missing; never duplicate files or folders.
+5. Finish with Phase 5 verification and the completion gate as usual.
 
 ## Repair / re-run behavior
 
@@ -152,7 +182,7 @@ Only say "setup complete" when all applicable checks are true:
 - manifest exists and corresponds to deployed files;
 - Drive listing was re-checked;
 - important files were read back;
-- setup-created temporary files are gone;
+- nothing was created outside the approved destination, and `.pmo-setup-check.md` is gone or its location was reported to the user;
 - no pre-existing user data was destroyed.
 
 Otherwise report the completed subset and the specific remaining work.

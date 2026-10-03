@@ -136,3 +136,15 @@ def test_organize_skill_intro_matches_in_place_scope_rule():
     assert "every accepted change is a new record" not in head
     assert "apply only the accepted ones as new append-only records" not in head
     assert "pmo set-scope" in head and "never by superseding" in head
+
+
+def test_setup_skill_warns_about_duration_resumes_and_stays_inside_destination():
+    skill = (REPO_ROOT / "skills" / "pmo-setup" / "SKILL.md").read_text(encoding="utf-8")
+    intro = skill.split("## Non-negotiable rules")[0]
+    assert "5 分以上" in intro and "続けて" in intro
+    assert "## Resuming after an interruption" in skill
+    assert "Never create anything outside the approved destination" in skill
+    assert ".pmo-setup-check.md" in skill
+    assert "nothing was created outside the approved destination" in skill
+    for readme, phrase in (("README.ja.md", "続けて"), ("README.md", "continue")):
+        assert phrase in (REPO_ROOT / readme).read_text(encoding="utf-8")
