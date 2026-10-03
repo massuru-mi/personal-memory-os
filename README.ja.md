@@ -74,7 +74,8 @@ AI はこうした依頼を、ドライブ上の手順書（`_system/skills/`）
 | 訂正に「どんな場面で効くか」（Trigger）を付ける | 使える。GUARDRAILS に表示される |
 | 記憶の整理（重複・矛盾・終わった用事） | 使える。手順書 [`pmo-organize`](skills/pmo-organize/SKILL.md) あり。提案して、了承されたものだけ反映 |
 | 壊れた記録の点検と修復 | 使える。手順書 [`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md) あり。意味を変えない修復だけを自動で行う |
-| Claude Code・Codex からの利用 | 使える。PMO フォルダの `AGENTS.md`（`CLAUDE.md`）を自動で読み、`pmo` コマンドで記録する |
+| Claude Code・Codex からの利用 | 使える。PMO フォルダで起動すると `AGENTS.md`（`CLAUDE.md`）を自動で読み、`pmo` コマンドで記録する |
+| どのフォルダのセッションでも PMO を使う（MCP） | 使える。`pmo mcp` を登録すると、接続中のセッションだけ PMO 前提で動く。外せばオフ |
 | 古い記憶を新しい記憶で置き換える | 使える。置き換えられた古い記憶は一覧から外れる |
 | 推測と、はっきり言われたことの区別 | 使える。推測は確信度が基準を満たしたときだけ一覧に出し、「推測」と表示する |
 | 一覧ファイル（MEMORY・NOW・GUARDRAILS・INDEX）の作り直し | 使える。パソコンでは `pmo rebuild`、AI からは手順書 [`pmo-refresh-views`](skills/pmo-refresh-views/SKILL.md) に従う |
@@ -179,6 +180,19 @@ PMO フォルダで Claude Code や Codex（Obsidian のプラグイン Claudian
 
 自分用のルールは `_config/custom_rules.md` に書きます。`AGENTS.md` と `CLAUDE.md` は PMO の更新で置き換わるので、直接は編集しません。もともと自分の `AGENTS.md` や `CLAUDE.md` があるフォルダに PMO を入れた場合、PMO はそれを上書きせず、スキップしたことを知らせます。
 
+### どのフォルダからでも使う（MCP）
+
+PMO フォルダ以外で作業しているときも PMO を使いたい場合は、MCP サーバ `pmo mcp` を登録します。
+
+- **オン・オフが簡単**：接続しているセッションでは、AI が最初に訂正と記憶を読み込み、記録は PMO のツールで行います。接続を外せば、PMO の指示もツールも入りません。
+- **デフォルトでオンにできる**：Claude Code でユーザー全体に登録すると、すべての新しいセッションで有効になります。オフにしたいプロジェクトでは `/mcp` から無効にします。
+
+```bash
+claude mcp add --scope user pmo -- pmo mcp --vault "/path/to/PMO"
+```
+
+MCP を使うには、コマンドを `personal-memory-os[mcp]` として入れます。Codex への登録方法やオフにする方法は、[MCP の説明](docs/mcp.ja.md)を見てください。
+
 ### コマンドを入れる
 
 Python 3.11 以上が必要です。このリポジトリを取得し、記憶のフォルダとは別の場所で実行します。
@@ -242,7 +256,7 @@ ruff check .
 - [アーキテクチャ](docs/architecture.md) / [保存の約束事](docs/storage-contract.md)
 - [AI との連携](docs/ai-integration.md) / [記憶のルール](docs/memory-protocol.md)
 - 手順書：[初期設定](skills/pmo-setup/SKILL.md) / [記録](skills/pmo-remember/SKILL.md) / [整理](skills/pmo-organize/SKILL.md) / [点検と修復](skills/pmo-doctor-repair/SKILL.md) / [更新](skills/pmo-update/SKILL.md) / [一覧の作り直し](skills/pmo-refresh-views/SKILL.md)
-- [クラウドでの使い方](docs/local-optional-design.ja.md) / [カスタム指示の文面](docs/custom-instructions.ja.md) / [今後の拡張の設計メモ](docs/agent-integration-proposals.ja.md)
+- [MCP の説明](docs/mcp.ja.md) / [クラウドでの使い方](docs/local-optional-design.ja.md) / [カスタム指示の文面](docs/custom-instructions.ja.md) / [今後の拡張の設計メモ](docs/agent-integration-proposals.ja.md)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## ライセンス
