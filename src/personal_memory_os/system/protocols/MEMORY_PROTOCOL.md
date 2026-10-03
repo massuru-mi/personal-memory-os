@@ -41,7 +41,7 @@ AI inference must stay distinguishable from explicit user information. Do not si
 
 ## Event model
 
-Canonical memory is append-oriented. Create a new file in `10_Memory/Events/` using schema `pmo.memory-event/v1`. Do not rewrite a global memory view as the source of truth.
+Canonical memory is append-oriented. Create a new file in `10_Memory/Events/` using schema `pmo.memory-event/v1`, starting from `_system/templates/memory-event.md`. Put the memory content in the body after the closing `---`. Do not rewrite a global memory view as the source of truth.
 
 Required fields: `id`, `type`, `created_at`, `source`, `importance`, `confidence`, `explicitness`, `status`.
 
