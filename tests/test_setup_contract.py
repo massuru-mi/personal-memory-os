@@ -44,3 +44,13 @@ def test_repository_has_no_legacy_root_naming():
         source = path.read_text(encoding="utf-8")
         for term in forbidden:
             assert term not in source, f"{term!r} remains in {path.relative_to(REPO_ROOT)}"
+
+
+def test_refresh_views_skill_is_deployed_and_referenced():
+    repo_skill = (REPO_ROOT / "skills" / "pmo-refresh-views" / "SKILL.md").read_text(encoding="utf-8")
+    deployed_skill = read_system_text("skills/pmo-refresh-views/SKILL.md")
+    start = read_system_text("START_HERE.md")
+    assert repo_skill == deployed_skill
+    assert "pmo-refresh-views/SKILL.md" in start
+    assert "pmo rebuild" in repo_skill
+    assert "fail closed" in repo_skill

@@ -49,6 +49,8 @@ When the user asks to edit memory represented in a view:
 3. refresh the affected view when possible;
 4. report canonical-save success separately from view-refresh success.
 
+When generated views may be stale after canonical writes, or when the user asks to refresh/rebuild/regenerate them, follow `_system/skills/pmo-refresh-views/SKILL.md`. Prefer the local `pmo rebuild` implementation when available; otherwise use the connector-driven procedure in that skill.
+
 ## Write boundary
 
 - `_system/**`: read-only to ordinary AI operation. Updated only by PMO deployment/update.
