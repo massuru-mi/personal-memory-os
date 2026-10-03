@@ -43,7 +43,6 @@ PMO/
 ├─ INDEX.md
 ├─ _system/
 ├─ _config/
-├─ 00_Inbox/
 ├─ 10_Memory/
 ├─ 50_Daily/
 └─ 80_Archive/

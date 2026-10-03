@@ -151,7 +151,6 @@ PMO/
 ├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # 記憶から作り直せる一覧
 ├─ _system/             # ルール・テンプレート・手順書（skills）
 ├─ _config/             # 自分の設定（settings.yaml）と追加ルール（custom_rules.md）
-├─ 00_Inbox/
 ├─ 10_Memory/
 │  ├─ Events/           # 記憶（1 件 1 ファイル。好み・事実・決定などは種類で区別）
 │  └─ Corrections/      # 訂正（1 件 1 ファイル）

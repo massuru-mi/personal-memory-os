@@ -4,13 +4,11 @@ from pathlib import Path
 
 SYSTEM_DIR = "_system"
 CONFIG_DIR = "_config"
-INBOX_DIR = "00_Inbox"
 MEMORY_DIR = "10_Memory"
 DAILY_DIR = "50_Daily"
 ARCHIVE_DIR = "80_Archive"
 
 DATA_DIRECTORIES = (
-    f"{INBOX_DIR}/MemoryCandidates",
     f"{MEMORY_DIR}/Events",
     f"{MEMORY_DIR}/Corrections",
     DAILY_DIR,
