@@ -97,7 +97,7 @@ Requests to edit generated views such as `MEMORY.md` must update canonical recor
 | Markdown memory and corrections | CLI and shared schemas implemented |
 | Correction and replacement handling | Resolves `supersedes` and excludes old records from current views |
 | Explicit information vs. inference | MEMORY and NOW use the configured confidence threshold and label accepted inferences |
-| MEMORY / NOW / GUARDRAILS / INDEX | Rebuildable through the CLI |
+| MEMORY / NOW / GUARDRAILS / INDEX | Rebuildable through the CLI; cloud assistants can follow `skills/pmo-refresh-views/SKILL.md` when raw Drive writes are available |
 | Session logs and daily summaries | Turn ingestion and generation of a selected day's summary implemented |
 | Local search, duplicate detection, backups | Available through the CLI |
 | System updates and migrations | Deployment, drift detection, backups and schema migration foundation implemented; known limitations below |
@@ -188,7 +188,7 @@ ruff check .
 
 - [Architecture](docs/architecture.md) / [Storage contract](docs/storage-contract.md)
 - [AI integration](docs/ai-integration.md) / [Memory protocol](docs/memory-protocol.md)
-- [AI setup skill](skills/pmo-setup/SKILL.md) / [Cloud workflow](docs/local-optional-design.ja.md) / [Minimal instruction templates](docs/custom-instructions.ja.md)
+- [AI setup skill](skills/pmo-setup/SKILL.md) / [View refresh skill](skills/pmo-refresh-views/SKILL.md) / [Cloud workflow](docs/local-optional-design.ja.md) / [Minimal instruction templates](docs/custom-instructions.ja.md)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## License
