@@ -15,7 +15,14 @@ from .config import load_settings
 from .constants import VERSION_FILE
 from .deploy import read_version
 from .doctor import doctor_dict
-from .events import new_event_id, now_for_vault, read_events, write_correction, write_memory_event
+from .events import (
+    new_event_id,
+    now_for_vault,
+    read_events,
+    set_scope,
+    write_correction,
+    write_memory_event,
+)
 from .models import CorrectionEvent, MemoryEvent
 from .paths import VaultPaths
 from .runtime_index import rebuild_index, search
@@ -219,6 +226,13 @@ class PMOTools:
         path = write_correction(vault, correction)
         return self._after_write(vault, correction.id, path)
 
+    def set_scope(self, ids: list[str], scope: list[str]) -> dict[str, Any]:
+        vault = self._require_vault()
+        changed = set_scope(vault, ids, scope)
+        rebuild_views(vault)
+        self._index_fresh = False
+        return {"updated": [p.relative_to(vault).as_posix() for p in changed], "scope": scope}
+
     def rebuild(self) -> dict[str, Any]:
         vault = self._require_vault()
         views = [p.name for p in rebuild_views(vault)]
@@ -395,6 +409,13 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
         return tools.record_correction(
             wrong, correct, trigger, topic, priority, repeat_error_count, supersedes, source, scope,
         )
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True))
+    def pmo_set_scope(ids: list[str], scope: list[str]) -> dict[str, Any]:
+        """Classify existing memories or corrections: replace their scope in place (content is untouched).
+        Use for classifying, splitting, merging or renaming categories after the user approved the change.
+        To change what a record says, record a superseding one instead."""
+        return tools.set_scope(ids, scope)
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True))
     def pmo_rebuild() -> dict[str, Any]:

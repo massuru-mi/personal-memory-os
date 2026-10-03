@@ -182,6 +182,7 @@ pmo ingest-turn <vault> turn.json
 pmo daily <vault> YYYY-MM-DD
 pmo status <vault>
 pmo duplicates <vault>
+pmo set-scope <vault> <id>... --scope <category>
 pmo backup <vault>
 pmo update <vault>
 ```

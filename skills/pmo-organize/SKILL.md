@@ -1,17 +1,17 @@
 ---
 name: pmo-organize
-description: Organize a Personal Memory OS (PMO) vault on request — find duplicates, contradictions, stale open loops and weak inferences, propose concrete changes, and apply only the accepted ones as new append-only records that supersede or retire old ones. Use when the user asks to organize, clean up, review, deduplicate or tidy their PMO memory.
+description: Organize a Personal Memory OS (PMO) vault on request — find duplicates, contradictions, stale open loops, weak inferences and unclassified or mis-classified records, propose concrete changes, and apply only the accepted ones. Content changes are new append-only records that supersede or retire old ones; scope (category) changes are made in place with pmo set-scope / pmo_set_scope. Use when the user asks to organize, clean up, review, deduplicate, classify or tidy their PMO memory.
 ---
 
 # PMO Organize Skill
 
-Help the user keep their memory accurate and small. Organizing never edits or deletes existing records: every accepted change is a new record that supersedes the old ones.
+Help the user keep their memory accurate and small. Organizing never deletes records and never edits what a record says: every accepted content change is a new record that supersedes the old ones. The one exception is a record's `scope` (its category), which is classification metadata: classify, split, merge or rename categories in place with `pmo set-scope` / `pmo_set_scope`, never by superseding.
 
 ## Non-negotiable rules
 
 1. Read the active PMO `START_HERE.md` first, then `GUARDRAILS.md`, `MEMORY.md` and `NOW.md`.
 2. Propose first. Apply only the changes the user accepts, item by item or as an explicitly accepted batch.
-3. Never edit, delete or rename an existing canonical record. Use `supersedes`.
+3. Never edit, delete or rename an existing canonical record to change what it says. Use `supersedes`. The only in-place change is a record's `scope` (classification), made with `pmo set-scope` / `pmo_set_scope`.
 4. Never turn an inference into a user fact, and never resolve a contradiction by guessing which record is right. Ask.
 5. User corrections outrank ordinary memory. Do not retire or weaken an active correction unless the user explicitly says it no longer applies.
 6. Never write `_system/**` or generated views directly.
@@ -62,9 +62,9 @@ Write each change with `_system/skills/pmo-remember/SKILL.md`:
 | Retire an item (done, no longer true) | one memory event with `status: archived`, the same `type`, content stating what is retired and why, `supersedes: [the retired ID]` — it hides itself and the old record from the views |
 | Confirm an inference | one explicit memory event with the user's wording, `supersedes: [the inferred ID]` |
 | Add a missing trigger | one new correction with the same wrong/correct text plus `## Trigger`, `supersedes: [the old correction ID]` |
-| Set or change a scope (classify, split, merge, rename a category) | for each affected record, a new record with the same content and fields and the new `scope`, `supersedes: [its old ID]` |
+| Set or change a scope (classify, split, merge, rename a category) | no new record: change the scope in place with `pmo set-scope <vault> <id>… --scope <new>` or `pmo_set_scope` (only the `scope` line changes) |
 
-With the CLI, submit records that need `supersedes` or `status` through `pmo ingest-turn` (see the pmo-remember skill). Then run `pmo rebuild`.
+With the CLI, submit records that need `supersedes` or `status` through `pmo ingest-turn` (see the pmo-remember skill). Back up with `pmo backup` before a large reclassification. Then run `pmo rebuild`.
 
 ## 4. Report
 
