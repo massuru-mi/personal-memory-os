@@ -10,7 +10,7 @@ When Daily is enabled, each AI conversation owns one provider/session-specific s
 
 `50_Daily/YYYY-MM-DD/<provider>_<session-id>_<topic>.md`
 
-Different providers/chats must not edit the same session file.
+Different providers/chats must not edit the same session file. Start each session file from `_system/templates/daily-session.md`.
 
 If `daily.update_on_every_meaningful_turn` is enabled, keep the session file concise and cumulative under:
 
