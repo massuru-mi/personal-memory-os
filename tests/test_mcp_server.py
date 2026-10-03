@@ -180,6 +180,7 @@ def test_recent_activity_does_not_crowd_out_durable_memory(vault: Path):
     assert result["now"]
     assert result["omitted"]["now"] > 0
 
+
 def test_now_items_are_cut_shorter_than_memory_items(vault: Path):
     tools = PMOTools(vault)
     loop = tools.record_memory("open_loop", "n" * 1000)
