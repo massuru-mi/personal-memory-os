@@ -39,6 +39,7 @@ class CorrectionEvent:
     status: str = "active"
     repeat_error_count: int = 1
     supersedes: list[str] = field(default_factory=list)
+    trigger: str | None = None
 
     def validate(self) -> None:
         validate_fields(
@@ -47,3 +48,5 @@ class CorrectionEvent:
         )
         require_text(self.wrong, "wrong")
         require_text(self.correct, "correct")
+        if self.trigger is not None:
+            require_text(self.trigger, "trigger")

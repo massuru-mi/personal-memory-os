@@ -82,6 +82,8 @@ def write_correction(vault_root: Path, correction: CorrectionEvent) -> Path:
         "supersedes": correction.supersedes,
     }
     body = f"## Wrong assumption\n{correction.wrong.strip()}\n\n## Correct understanding\n{correction.correct.strip()}"
+    if correction.trigger:
+        body += f"\n\n## Trigger\n{correction.trigger.strip()}"
     runtime = paths.runtime_root()
     with file_lock(runtime / "locks" / "corrections.lock"):
         if target.exists():

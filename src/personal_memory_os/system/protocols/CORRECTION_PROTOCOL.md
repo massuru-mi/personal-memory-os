@@ -23,7 +23,16 @@ The incorrect assumption in concise terms.
 The corrected understanding.
 ```
 
-Additional body sections, such as guidance for future answers, may follow these two.
+Optional body section:
+
+```markdown
+## Trigger
+The situation in which this correction should be applied, e.g. "when advising on Claude Code features for this user".
+```
+
+Add `## Trigger` when the user's correction makes the situation clear; it helps future assistants recall the correction at the right time. Do not invent a broader trigger than the correction supports. If present, it must not be empty.
+
+Additional body sections, such as guidance for future answers, may follow these.
 
 Do not manufacture a “wrong” statement the user never corrected. Do not generalize a narrow correction beyond its supported scope.
 
