@@ -19,17 +19,31 @@ from .events import new_event_id, now_for_vault, read_events, write_correction, 
 from .models import CorrectionEvent, MemoryEvent
 from .paths import VaultPaths
 from .runtime_index import rebuild_index, search
+from .scopes import applies_to, is_global
 from .validation import CORRECTION_SCHEMA, aware_datetime
-from .views import active_memory_rows, inference_label, now_rows, rebuild_views
+from .views import (
+    active_corrections,
+    active_memory_rows,
+    categories,
+    correction_block,
+    inference_label,
+    now_rows,
+    rebuild_views,
+    scope_label,
+)
 
 VAULT_ENV = "PMO_VAULT"
 
 INSTRUCTIONS = """\
 PMO (Personal Memory OS) is connected: the user's own memory, shared across AI assistants.
 At the start of the session, before relying on personal context, call pmo_bootstrap once and follow what it returns.
+- pmo_bootstrap returns global guardrails and memory plus the list of the user's categories. When the conversation
+  is about one or more of those categories (or a parent of them), call pmo_category_context with all that apply.
 - User corrections (guardrails) outrank everything else, including ordinary memory.
 - Save only what the user asks to save, or what the returned memory policy allows; otherwise propose the save.
 - Write memories and corrections only with pmo_record_memory / pmo_record_correction. Never edit PMO files by hand.
+  Give each a scope: "global" only for how to behave in every conversation, otherwise the best matching category
+  (reuse existing ones; create a new path like "digital/video-editing" when none fits; use the broader parent if unsure).
 - To change or retire a recorded item, record a new one that supersedes it.
 If pmo_bootstrap reports PMO as unavailable, tell the user once and continue without PMO.
 """
@@ -99,13 +113,39 @@ class PMOTools:
             "rules": "Full rules: START_HERE.md and _system/protocols/ in the vault (read with pmo_read_file).",
             "warnings": warnings,
         }
-        guardrails = vault / "GUARDRAILS.md"
-        result["guardrails"] = guardrails.read_text(encoding="utf-8") if guardrails.is_file() else ""
         try:
-            result.update(self._budgeted_memory(vault, max_chars or self.max_context_chars, len(result["guardrails"])))
+            result["guardrails"] = self._guardrails(vault, [r for r in active_corrections(vault) if is_global(r[0])])
+            result["categories"] = categories(vault)
+            result.update(self._budgeted_memory(
+                vault, max_chars or self.max_context_chars, len(result["guardrails"]), memory_filter=is_global,
+            ))
         except Exception as exc:  # noqa: BLE001 - unreadable records must not hide guardrails
-            warnings.append(f"Memory could not be loaded ({exc}). Follow _system/skills/pmo-doctor-repair/SKILL.md.")
-            result.update({"now": "", "memory": "", "omitted": {"now": 0, "memory": 0}})
+            warnings.append(f"Records could not be loaded ({exc}). Follow _system/skills/pmo-doctor-repair/SKILL.md.")
+            fallback = vault / "GUARDRAILS.md"
+            result["guardrails"] = fallback.read_text(encoding="utf-8") if fallback.is_file() else ""
+            result.update({"categories": [], "now": "", "memory": "", "omitted": {"now": 0, "memory": 0}})
+        return result
+
+    def category_context(self, categories_: list[str], max_chars: int | None = None) -> dict[str, Any]:
+        vault = self._require_vault()
+        wanted = [c.strip() for c in categories_ if isinstance(c, str) and c.strip()]
+        if not wanted:
+            raise ValueError("Pass at least one category from pmo_bootstrap's categories.")
+        guardrails = self._guardrails(vault, [r for r in active_corrections(vault) if applies_to(r[0], wanted)])
+        memory = [r for r in active_memory_rows(vault) if applies_to(r[0], wanted)]
+        memory.sort(key=self._importance_key, reverse=True)
+        budget = max(max_chars or self.max_context_chars, MIN_MAX_CONTEXT_CHARS) - len(guardrails)
+        lines, _ = self._take(vault, memory, budget)
+        known = {entry["category"] for entry in categories(vault)}
+        result: dict[str, Any] = {
+            "categories": wanted,
+            "guardrails": guardrails,
+            "memory": "\n".join(lines),
+            "omitted": len(memory) - len(lines),
+            "unknown_categories": [c for c in wanted if c not in known],
+        }
+        if result["omitted"]:
+            result["more"] = "Some lower-priority items were omitted. Use pmo_search to find them."
         return result
 
     def search(self, query: str, limit: int = 10) -> dict[str, Any]:
@@ -141,6 +181,7 @@ class PMOTools:
         supersedes: list[str] | None = None,
         status: str = "active",
         source: str = "mcp",
+        scope: list[str] | None = None,
     ) -> dict[str, Any]:
         vault = self._require_vault()
         supersedes = supersedes or []
@@ -149,7 +190,7 @@ class PMOTools:
         event = MemoryEvent(
             id=new_event_id("mem", at), type=type, content=content, created_at=at, source=source,
             importance=importance, status=status, topic=topic, confidence=confidence,
-            explicitness=explicitness, supersedes=supersedes,
+            explicitness=explicitness, supersedes=supersedes, scope=scope or [],
         )
         path = write_memory_event(vault, event)
         return self._after_write(vault, event.id, path)
@@ -164,6 +205,7 @@ class PMOTools:
         repeat_error_count: int = 1,
         supersedes: list[str] | None = None,
         source: str = "mcp",
+        scope: list[str] | None = None,
     ) -> dict[str, Any]:
         vault = self._require_vault()
         supersedes = supersedes or []
@@ -172,7 +214,7 @@ class PMOTools:
         correction = CorrectionEvent(
             id=new_event_id("correction", at), wrong=wrong, correct=correct, created_at=at, source=source,
             priority=priority, topic=topic, repeat_error_count=repeat_error_count,
-            supersedes=supersedes, trigger=trigger,
+            supersedes=supersedes, trigger=trigger, scope=scope or [],
         )
         path = write_correction(vault, correction)
         return self._after_write(vault, correction.id, path)
@@ -186,7 +228,15 @@ class PMOTools:
 
     # -- helpers ------------------------------------------------------------
 
-    def _budgeted_memory(self, vault: Path, max_chars: int, used: int) -> dict[str, Any]:
+    @staticmethod
+    def _guardrails(vault: Path, rows) -> str:
+        return "\n\n".join(correction_block(meta, body, path, vault, level=2) for meta, body, path in rows)
+
+    @staticmethod
+    def _importance_key(row):
+        return float(row[0].get("importance", 0)), aware_datetime(row[0]["created_at"])
+
+    def _budgeted_memory(self, vault: Path, max_chars: int, used: int, memory_filter=None) -> dict[str, Any]:
         """Fill the remaining budget with NOW items (newest first) and memory (most important first).
 
         Guardrails are always returned in full and count against the budget first.
@@ -194,11 +244,11 @@ class PMOTools:
         budget = max(max_chars, MIN_MAX_CONTEXT_CHARS) - used
         now = now_rows(vault)
         now_ids = {meta["id"] for _, meta, _, _ in now}
-        memory = [row for row in active_memory_rows(vault) if row[0]["id"] not in now_ids]
-        memory.sort(
-            key=lambda row: (float(row[0].get("importance", 0)), aware_datetime(row[0]["created_at"])),
-            reverse=True,
-        )
+        memory = [
+            row for row in active_memory_rows(vault)
+            if row[0]["id"] not in now_ids and (memory_filter is None or memory_filter(row[0]))
+        ]
+        memory.sort(key=self._importance_key, reverse=True)
         now_items = [(meta, body, path) for _, meta, body, path in now]
         # NOW gets at most a share of the budget first so durable memory (preferences, facts) is never
         # crowded out by recent activity; whatever memory leaves unused flows back to NOW.
@@ -229,7 +279,7 @@ class PMOTools:
                 text = text[: ITEM_MAX_CHARS - 1] + "…"
             topic = f" [{meta['topic']}]" if meta.get("topic") else ""
             line = (
-                f"- ({meta.get('type')}) {text}{topic}{inference_label(meta)}"
+                f"- ({meta.get('type')}) {text}{topic}{scope_label(meta)}{inference_label(meta)}"
                 f" · {path.relative_to(vault).as_posix()}"
             )
             if len(line) + 1 > budget:
@@ -278,11 +328,18 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
 
     @server.tool(annotations=read_only)
     def pmo_bootstrap(max_chars: int | None = None) -> dict[str, Any]:
-        """Load the user's PMO context: all guardrails (corrections), then current focus and the most important
-        memories within a character budget, plus memory policy and custom rules. Call once at the start of a
-        session. "omitted" counts items left out; find them with pmo_search. Returns available=false if PMO
-        cannot be reached."""
+        """Load the user's PMO context: all global guardrails (corrections), then current focus and the most
+        important global memories within a character budget, plus memory policy, custom rules and the user's
+        categories. Call once at the start of a session; call pmo_category_context when the conversation enters
+        a listed category. "omitted" counts items left out. Returns available=false if PMO cannot be reached."""
         return tools.bootstrap(max_chars)
+
+    @server.tool(annotations=read_only)
+    def pmo_category_context(categories: list[str], max_chars: int | None = None) -> dict[str, Any]:
+        """Load the guardrails (in full) and most important memories for one or more categories from
+        pmo_bootstrap, including those recorded in their parent categories. Pass every category the
+        conversation touches, e.g. ["digital/video-editing", "work"]."""
+        return tools.category_context(categories, max_chars)
 
     @server.tool(annotations=read_only)
     def pmo_search(query: str, limit: int = 10) -> dict[str, Any]:
@@ -306,13 +363,16 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
         supersedes: list[str] | None = None,
         status: Literal["active", "archived"] = "active",
         source: str = "mcp",
+        scope: list[str] | None = None,
     ) -> dict[str, Any]:
         """Append one memory event. Use only for what the user asked to save or the memory policy allows.
         Preferences and working style use type=preference. To change a recorded item, pass the old IDs in
         supersedes; to retire one, also set status=archived. Mark AI inferences explicitness=inferred with an
-        honest confidence. Set source to the assistant name (e.g. claude-code, codex)."""
+        honest confidence. Set source to the assistant name (e.g. claude-code, codex). scope: ["global"] only
+        for things that matter in every conversation; otherwise the best matching category path from
+        pmo_bootstrap (or a new one such as "digital/video-editing"); several are allowed."""
         return tools.record_memory(
-            type, content, topic, importance, explicitness, confidence, supersedes, status, source,
+            type, content, topic, importance, explicitness, confidence, supersedes, status, source, scope,
         )
 
     @server.tool(annotations=append_only)
@@ -325,12 +385,15 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
         repeat_error_count: int = 1,
         supersedes: list[str] | None = None,
         source: str = "mcp",
+        scope: list[str] | None = None,
     ) -> dict[str, Any]:
         """Append a user correction: the AI assumption that was wrong and the user's correct understanding.
         Corrections outrank ordinary memory. Add trigger (the situation in which it applies) only when the
-        user's correction makes it clear. Use supersedes with a higher repeat_error_count for repeated errors."""
+        user's correction makes it clear. Use supersedes with a higher repeat_error_count for repeated errors.
+        scope: ["global"] for how to behave in every conversation (language, tone, honesty); otherwise the
+        narrowest category it applies to, so narrow one-off corrections are not loaded in every session."""
         return tools.record_correction(
-            wrong, correct, trigger, topic, priority, repeat_error_count, supersedes, source,
+            wrong, correct, trigger, topic, priority, repeat_error_count, supersedes, source, scope,
         )
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True))

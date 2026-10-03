@@ -9,6 +9,7 @@ from .constants import DECISIONS_DIR, KNOWLEDGE_DIR, PROJECTS_DIR
 from .events import read_events
 from .io import atomic_write_text
 from .paths import VaultPaths
+from .scopes import GLOBAL, category_summary, record_scopes
 from .validation import CORRECTION_SCHEMA, aware_datetime, probability
 
 PRIORITY_ORDER = {"critical": 0, "high": 1, "normal": 2, "low": 3}
@@ -42,6 +43,30 @@ def _inference_label(meta):
     return ""
 
 
+def scope_label(meta) -> str:
+    scopes = [s for s in record_scopes(meta) if s != GLOBAL]
+    return f" {{{', '.join(scopes)}}}" if scopes else ""
+
+
+def active_corrections(vault_root: Path):
+    """Active corrections, strongest first: critical before others, then by repeat count."""
+    rows = _active(read_events(VaultPaths(vault_root).corrections, CORRECTION_SCHEMA))
+    rows.sort(key=lambda x: (PRIORITY_ORDER.get(str(x[0].get("priority", "normal")), 9), -int(x[0].get("repeat_error_count", 1))))
+    return rows
+
+
+def correction_block(meta, body, path: Path, root: Path, level: int = 3) -> str:
+    """Render one correction; body sections are demoted below the given heading level."""
+    topic = meta.get("topic") or "General"
+    count = int(meta.get("repeat_error_count", 1))
+    inner = "#" * (level + 1)
+    body = "\n".join(f"{inner} {line[3:]}" if line.startswith("## ") else line for line in body.splitlines())
+    return (
+        f"{'#' * level} {topic}\n\n{body}\n\n- Priority: `{meta.get('priority', 'critical')}`\n"
+        f"- Repeat count: `{count}`\n- Source: {_fmt_link(path, root)}"
+    )
+
+
 def _fmt_link(path: Path, root: Path) -> str:
     rel = path.relative_to(root).with_suffix("").as_posix()
     return f"[[{rel}]]"
@@ -58,21 +83,34 @@ def render_memory(vault_root: Path) -> Path:
         items = sorted(grouped[kind], key=lambda x: float(x[0].get("importance", 0)), reverse=True)
         for meta, body, path in items:
             topic = f" **[{meta.get('topic')}]**" if meta.get("topic") else ""
-            chunks.append(f"- {body.strip()}{topic}{_inference_label(meta)} · {_fmt_link(path, vault_root)}")
+            chunks.append(
+                f"- {body.strip()}{topic}{scope_label(meta)}{_inference_label(meta)} · {_fmt_link(path, vault_root)}"
+            )
     target = vault_root / "MEMORY.md"
     atomic_write_text(target, "\n\n".join(chunks).rstrip() + "\n")
     return target
 
 
 def render_guardrails(vault_root: Path) -> Path:
-    paths = VaultPaths(vault_root)
-    rows = _active(read_events(paths.corrections, CORRECTION_SCHEMA))
-    rows.sort(key=lambda x: (PRIORITY_ORDER.get(str(x[0].get("priority", "normal")), 9), -int(x[0].get("repeat_error_count", 1))))
-    chunks = ["# Guardrails", "_Generated from active user corrections. Treat these as higher priority than ordinary memory._"]
-    for meta, body, path in rows:
-        topic = meta.get("topic") or "General"
-        count = int(meta.get("repeat_error_count", 1))
-        chunks.append(f"## {topic}\n\n{body}\n\n- Priority: `{meta.get('priority', 'critical')}`\n- Repeat count: `{count}`\n- Source: {_fmt_link(path, vault_root)}")
+    rows = active_corrections(vault_root)
+    chunks = [
+        "# Guardrails",
+        (
+            "_Generated from active user corrections. Treat these as higher priority than ordinary memory. "
+            "Always apply Global; apply a category section when the conversation is in that category "
+            "or a sub-category._"
+        ),
+    ]
+    sections: dict[str, list] = defaultdict(list)
+    for row in rows:
+        for scope in record_scopes(row[0]):
+            sections[scope].append(row)
+    for scope in [GLOBAL] + sorted(s for s in sections if s != GLOBAL):
+        if not sections.get(scope):
+            continue
+        chunks.append(f"## {'Global' if scope == GLOBAL else scope}")
+        for meta, body, path in sections[scope]:
+            chunks.append(correction_block(meta, body, path, vault_root))
     target = vault_root / "GUARDRAILS.md"
     atomic_write_text(target, "\n\n".join(chunks).rstrip() + "\n")
     return target
@@ -121,6 +159,13 @@ def render_now(vault_root: Path) -> Path:
     return target
 
 
+def categories(vault_root: Path) -> list[dict]:
+    """Categories used by active memory and corrections (see scopes.category_summary)."""
+    rows = [(m, b, p, "memory") for m, b, p in _memory_rows(vault_root)]
+    rows += [(m, b, p, "correction") for m, b, p in active_corrections(vault_root)]
+    return category_summary(rows, now_window_days(vault_root))
+
+
 def render_index(vault_root: Path) -> Path:
     paths = VaultPaths(vault_root)
     event_rows = read_events(paths.events)
@@ -141,6 +186,14 @@ def render_index(vault_root: Path) -> Path:
     for key, count in sorted(counts.items()):
         chunks.append(f"- {key}: {count}")
     chunks.append(f"- corrections: {len(corrections)}")
+    summary = categories(vault_root)
+    if summary:
+        chunks.append("## Categories")
+        for entry in summary:
+            chunks.append(
+                f"- {entry['category']}: {entry['memories']} memories, {entry['corrections']} corrections"
+                f" ({entry['recent']} recent)"
+            )
     target = vault_root / "INDEX.md"
     atomic_write_text(target, "\n".join(chunks).rstrip() + "\n")
     return target
