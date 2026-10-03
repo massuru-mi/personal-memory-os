@@ -39,3 +39,10 @@ def test_update_fails_closed_on_system_drift(tmp_path: Path):
     assert detect_drift(vault)
     with pytest.raises(DriftError):
         update(vault, backup=False)
+
+
+def test_install_deploys_remember_and_repair_skills(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    for name in ("pmo-remember", "pmo-doctor-repair"):
+        assert (vault / "_system" / "skills" / name / "SKILL.md").exists()

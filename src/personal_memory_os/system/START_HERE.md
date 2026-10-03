@@ -30,6 +30,8 @@ For other information:
 
 Canonical memory events belong under `10_Memory/Events/`; corrections belong under `10_Memory/Corrections/`. Preserve history with `supersedes` rather than rewriting old facts in place.
 
+To save a memory or correction, follow `_system/skills/pmo-remember/SKILL.md`. If records cannot be parsed, `pmo doctor` fails, or the user asks to check or repair PMO, follow `_system/skills/pmo-doctor-repair/SKILL.md`.
+
 ## Daily behavior
 
 Daily/session logging is optional.
