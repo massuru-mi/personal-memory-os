@@ -11,7 +11,7 @@ from .curator import find_exact_duplicates
 from .daily import render_day_summary
 from .deploy import detect_drift, install, read_version, update
 from .doctor import doctor_dict
-from .events import new_event_id, now_for_vault, write_correction, write_memory_event
+from .events import new_event_id, now_for_vault, set_scope, write_correction, write_memory_event
 from .ingest import ingest_turn
 from .models import CorrectionEvent, MemoryEvent
 from .runtime_index import rebuild_index, search
@@ -66,6 +66,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--priority", choices=["low", "normal", "high", "critical"], default="critical")
     p.add_argument("--trigger", help="Situation in which this correction applies")
     p.add_argument("--scope", action="append", default=[], help="\"global\" or a category path such as digital/video-editing; repeatable (default: global)")
+
+    p = sub.add_parser("set-scope", help="Set the scope of existing records in place (classification only)")
+    p.add_argument("vault")
+    p.add_argument("ids", nargs="+", help="Record IDs (memory events or corrections)")
+    p.add_argument("--scope", action="append", required=True, help="\"global\" or a category path; repeatable")
 
     p = sub.add_parser("ingest-turn", help="Ingest a provider-neutral AI turn JSON payload")
     p.add_argument("vault")
@@ -170,6 +175,11 @@ def run(args: argparse.Namespace) -> object:
     if cmd == "backup":
         out = Path(args.output).expanduser().resolve() if args.output else None
         return {"path": str(create_backup(_root(args.vault), out))}
+    if cmd == "set-scope":
+        root = _root(args.vault)
+        changed = set_scope(root, args.ids, args.scope)
+        rebuild_views(root)
+        return {"updated": [str(p) for p in changed], "scope": args.scope}
     if cmd == "duplicates":
         return [
             {"fingerprint": group.fingerprint, "paths": [str(p) for p in group.paths]}
