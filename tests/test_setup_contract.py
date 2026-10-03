@@ -160,5 +160,13 @@ def test_setup_skill_and_readmes_explain_importing_past_chats():
     assert "このチャットの内容をPMOに登録してください。" in phase6
     assert "Do not import past chats yourself" in phase6
     ja = (REPO_ROOT / "README.ja.md").read_text(encoding="utf-8")
-    assert "### 過去のチャットを取り込む" in ja and "scope" in ja
-    assert "### Import past chats" in (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "### 過去のチャットを取り込む" in ja
+    assert "docs/import-past-chats.ja.md" in ja
+    prompt = phase6.split("このチャットの内容をPMOに登録してください。")[1].split("```")[0]
+    doc = (REPO_ROOT / "docs" / "import-past-chats.ja.md").read_text(encoding="utf-8")
+    assert "このチャットの内容をPMOに登録してください。" + prompt in doc
+    en = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "### Import past chats" in en and "docs/import-past-chats.md" in en
+    en_doc = (REPO_ROOT / "docs" / "import-past-chats.md").read_text(encoding="utf-8")
+    assert "Register the useful content of this chat in my PMO." in en_doc
+    assert 'Give every record a scope: "global"' in en_doc

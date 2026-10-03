@@ -1,174 +1,185 @@
 [日本語](README.ja.md) | English
 
-# Personal Memory OS
+# Personal Memory OS (PMO)
 
-**An open Memory OS that puts the memories scattered across AI assistants back in the user's hands.**
+**Your own memory, usable from any AI such as ChatGPT or Claude, kept in your own Google Drive.**
 
-We use more AI tools in everyday life: ChatGPT, Claude, Gemini, and others. Yet their conversation histories and memories do not automatically become a shared understanding of us. Context and decisions built up with one assistant often need to be explained again to another.
+Preferences, decisions and corrections you teach an AI usually stay inside that one AI. When you switch to another assistant, you explain the same things again.
 
-Important decisions, project progress, and corrections can also get buried in long conversations. We explain the same background again, or an assistant repeats a mistake we already corrected.
+PMO **stores that memory as Markdown files in your own Drive**. What ChatGPT learned, Claude can use too. Change assistants, and your memory stays with you.
 
-Personal Memory OS (PMO) aims to provide **a shared memory layer that the user owns, independent of any AI service**. Its canonical records are Markdown files in private storage, designed to remain portable as the tools we use change.
+## Where it works
 
-> PMO is in early development. Markdown protocols, the Python CLI, and an AI-readable Google Drive setup skill are implemented. Setup from ChatGPT into Google Drive has been confirmed; other apps and cross-app end-to-end use are still being validated. The vision below is distinct from the [features available today](#available-today-and-in-development).
+Results the author verified on real devices (as of 2026-10-03).
 
-## Why go beyond Obsidian alone?
+| Device | App | Mode | Setup | Read/write | MCP |
+|---|---|---|:---:|:---:|:---:|
+| iPhone | ChatGPT | Chat | ✅ | ✅ | ❌ |
+| iPhone | Claude | Chat | ❌ | ✅ | ❌ |
+| Mac | ChatGPT | Chat | — | ✅ | ❌ |
+| Mac | ChatGPT | Work | — | ✅ | ✅ |
+| Mac | Claude | Chat | — | ✅ | ❌ |
+| Mac | Claude | Cowork | — | ✅ | ❌ |
+| Mac | Claude Code | Desktop app | ✅ | ✅ | ✅ |
+| Mac | Codex | — | ✅ | ✅ | ✅ |
 
-Owning knowledge as Markdown and combining Obsidian with AI is a useful foundation. Local agents such as Claude Code and Codex can search, edit, and organize a vault directly.
+✅ verified　❌ does not work　— not tried yet
 
-But everyday conversations with AI also happen away from a computer: ChatGPT on an iPhone during a commute, Claude while thinking through an idea, and Codex or Claude Code while working at a desk.
+- **Setup**: can create PMO in Google Drive by following [`pmo-setup`](skills/pmo-setup/SKILL.md)
+- **Read/write**: can read PMO in Drive and add memories to it
+- **MCP**: can use PMO tools from a session in any folder by registering `pmo mcp` ([details](#use-from-any-folder-mcp))
 
-PMO aims to let **mobile, cloud, and local assistants use the same personal memory**, alongside Obsidian. Obsidian remains an option for reading and organizing that memory yourself.
+On a computer, Claude Code or Codex is recommended because they support MCP. Gemini and other assistants not listed have not been verified.
 
-```text
-ChatGPT / Claude / Gemini / Codex / Claude Code
-                      ↕
-            Personal Memory OS
-       Shared protocols, formats and tools
-                      ↕
-        User-owned Markdown ←→ Obsidian
-              Private storage
-```
+## Getting started
 
-This is the intended architecture, not a claim that integrations with every service shown are implemented.
+No installation is needed. Ask an AI and it sets up PMO in your Drive. Use an app marked "Setup ✅" in the table above.
 
-## Why open source?
+### 1. Prepare
 
-Building an AI-assisted personal memory system involves recurring infrastructure questions:
+Connect Google Drive in the assistant so it can create, read and write files.
 
-- How should files be organized, and what belongs in long-term memory?
-- When, if ever, should an AI inference become memory?
-- How should user corrections take precedence over older information?
-- How can concurrent writes from different assistants cause fewer conflicts?
-- How should daily conversations be organized?
-- How should search, backups, migrations, and system updates preserve existing memory?
-
-Everyone should not have to design this foundation from scratch and solve the same problems again.
-
-**Once someone has solved a piece of personal-memory infrastructure, the next person should be able to build on it.** That is one reason PMO is open source.
-
-Each user's actual memory stays in private storage. GitHub shares the machinery: protocols, schemas, templates, deployment tools, and migrations.
+### 2. Send this one line to the assistant
 
 ```text
-GitHub: Personal Memory OS
-    │  Shared as open source
-    ▼
-System / Protocol / Schema / Templates / Tools
-    │  Deploy into private storage
-    ▼
-Your Private Storage
-    ├─ Memory
-    ├─ Projects
-    ├─ Knowledge
-    └─ Daily
+Read https://github.com/massuru-mi/personal-memory-os/blob/main/skills/pmo-setup/SKILL.md and follow it to set up PMO in "My Drive/PMO" in my Google Drive.
 ```
 
-## The experience we are working toward
+**Setup can take five minutes or more.** If the reply stops part-way, send "continue". The assistant checks what already exists and resumes without creating anything twice.
 
-Ideally, managing memory does not require a special action every time.
+To use another destination, change `My Drive/PMO`. If you leave the destination out, the assistant asks you to approve `My Drive/PMO` before it writes anything.
 
-You talk to an assistant as usual. Important information is retained according to the saving policy you chose. When you correct the assistant, that correction takes precedence next time. The things you thought about, decided, and worked on can become a concise daily record.
+Following the setup skill ([`skills/pmo-setup/SKILL.md`](skills/pmo-setup/SKILL.md)), the assistant:
 
-Memory saved through ChatGPT can be used by Claude. Moving to another assistant does not mean starting over. The original records remain Markdown that you own, rather than context accessible only inside one AI service.
+- creates the folders and files
+- reads back what it created to verify it
+- gives you the verified link to `START_HERE.md`
+- writes the text to paste into your custom instructions
 
-**From a world where AI remembers the user, toward one where users own their memory and choose which AI can use it.** PMO aims to be open infrastructure for that transition.
+If the folder already contains PMO, nothing is duplicated; only missing items are added. Existing files are never deleted or overwritten.
 
-Automatic saving is a user choice. The proposed initial policy is to carry out explicit save/correction requests and suggest other updates during the conversation. Users can authorize automatic saving within a chosen scope and enable daily records.
+### 3. Set the entry point in each assistant
 
-## Start with an AI + Google Drive
+Setup happens once. After that, tell each assistant you want to use with PMO to "read `START_HERE.md` first".
 
-PMO can be bootstrapped without installing Python or desktop synchronization software. The canonical setup procedure for AI assistants is [`skills/pmo-setup/SKILL.md`](skills/pmo-setup/SKILL.md).
+| App | Where to set it |
+|---|---|
+| ChatGPT | Paste the text the assistant wrote into custom instructions |
+| Claude | Paste the text the assistant wrote into your profile |
+| Claude Code / Codex | [Register the MCP server](#use-from-any-folder-mcp) |
 
-1. Connect Google Drive in ChatGPT (or another capable assistant) so it can create, update, and read back files, then send this one-line prompt:
+The detailed rules live in `START_HERE.md` and the rule documents under `_system/` in your Drive. When PMO is updated, the new rules apply without re-pasting the instruction.
 
-   ```text
-   Read https://github.com/massuru-mi/personal-memory-os/blob/main/skills/pmo-setup/SKILL.md and follow it to set up PMO in "My Drive/PMO" in my Google Drive.
-   ```
+## Everyday use
 
-   Setup can take five minutes or more. If the assistant is interrupted part-way, reply "continue"; it checks what already exists and resumes without duplicating anything. Change `My Drive/PMO` to use another destination. If an existing PMO is found there, the assistant attaches to it and only fills in missing items instead of creating a duplicate.
-2. **Before the first Drive write, the setup assistant must have an approved destination.** If the user already supplied a folder/path, that is approval. Otherwise it proposes the default location `My Drive/PMO` and waits for explicit approval.
-3. The setup assistant pins the repository version/commit, reproduces the current `pmo install` layout in that approved location, then lists and reads back the deployed files.
-4. It returns the verified PMO folder link, the verified `START_HERE.md` link, and a minimal instruction snippet for the current AI app. Paste that snippet into ChatGPT custom instructions (or Claude profile/project instructions).
+Just talk to the assistant as usual.
 
-The standard root folder name is **`PMO`**. Detailed runtime behavior lives in the deployed `START_HERE.md`, protocols, and user config. App custom instructions are only a bootstrap pointer telling each new chat to read `START_HERE.md`.
+| What you want | Example |
+|---|---|
+| Have it remember | "Remember that I prefer concise answers" |
+| Correct it | "That's wrong. Actually, … Remember that" |
+| Correct it for a situation | "When you explain Claude Code features, first check whether my plan includes them" |
+| Organize | "Organize my memory" |
+| Check for problems | "Check my PMO" |
+| Refresh the lists | "Update the lists" |
 
-The setup skill does not grant Drive permissions, create background automation, or make unsupported connector operations available. If a required operation cannot be completed, the assistant must report setup as incomplete rather than simulate success.
+- **By default, only what you ask for is saved.** Anything else is only suggested ("Shall I save this?"). Automatic saving and daily records can be enabled in settings.
+- **Corrections outrank ordinary memory**, so the assistant does not repeat a mistake you already corrected.
+- **AI inferences are kept separate from facts.**
+- **Organizing starts with a proposal.** Duplicates, contradictions and finished items are listed, and only what you accept is applied. Original records are not deleted; new records replace them.
+
+The assistant handles these requests by following the skills in `_system/skills/` in your Drive.
 
 ### Import past chats
 
-Conversations from before the setup can be imported one chat at a time. After registering the custom instruction, open a past chat in the same app and send:
+Chats from before PMO can be imported one at a time. Open a past chat and send a fixed prompt; the assistant keeps only what is worth reusing and saves it with a scope. See [Import past chats](docs/import-past-chats.md) for the prompt and steps.
 
-```text
-Register the useful content of this chat in my PMO.
+## View it in Obsidian
 
-First read START_HERE in my Google Drive and follow the latest PMO rules.
-From this whole chat, extract facts, preferences, decisions, project information and corrections that will be useful again, and save them as the appropriate canonical records.
+The PMO folder in your Drive can be opened as an Obsidian vault as is. Sync it with Google Drive for desktop, then choose "Open folder as vault" in Obsidian.
 
-- Do not save the transcript; keep only the important information.
-- Give every record a scope: "global" only for what matters in every conversation; otherwise reuse an existing category, or create a new one if none fits.
-- Keep what I said explicitly separate from AI inferences or suggestions; never save an inference as a fact about me.
-- For information that may change over time, state in the record as of when it was true.
-- Check for duplicates and contradictions with existing records, and follow the Correction Protocol when needed.
+You can browse what the assistants saved through the lists (`MEMORY.md`, `NOW.md`, `GUARDRAILS.md`) and links, and read it yourself. To add or change memories, ask an assistant or use the `pmo` command instead of editing files directly. That keeps the format intact and preserves the replacement history.
 
-When done, briefly list what you registered, grouped by scope.
-```
+## What works and what does not yet
 
-Requests to edit generated views such as `MEMORY.md` must update canonical records first and refresh the view when possible. External writes do not automatically refresh the local FTS index; local CLI users should run `pmo rebuild` when needed.
+**Works**
 
-## Available today and in development
+- Saving memories and corrections ([`pmo-remember`](skills/pmo-remember/SKILL.md)); corrections can carry a trigger (the situation in which they apply)
+- Splitting memories and corrections into `global` (needed in every conversation) and categories; categories emerge from records. Over MCP only global items load each time; category items load when the topic matches
+- Replacing old memories with new ones; replaced memories drop out of the lists
+- Separating inferences from what you said explicitly; inferences appear in the lists only above the confidence threshold and are labeled as inferred
+- Organizing memory ([`pmo-organize`](skills/pmo-organize/SKILL.md)), diagnosis and repair ([`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md)), and PMO system updates ([`pmo-update`](skills/pmo-update/SKILL.md))
+- Rebuilding the lists (MEMORY, NOW, GUARDRAILS, INDEX) with [`pmo-refresh-views`](skills/pmo-refresh-views/SKILL.md) or `pmo rebuild`
+- Search, duplicate detection, backups, session logs and daily summaries through the local command (session logs are off by default)
 
-| Area | Current status |
-|---|---|
-| Markdown memory and corrections | CLI and shared schemas implemented; [`pmo-remember`](skills/pmo-remember/SKILL.md) skill |
-| Global vs. category scope | Memories and corrections can be `global` or in category paths (e.g. `digital/video-editing`); categories emerge from records, are not predefined, and are split/merged via `pmo-organize`. Over MCP only global items load at session start; category items load when the conversation enters that category |
-| Correction triggers | Optional `## Trigger` section (when the correction applies), shown in GUARDRAILS; `pmo correct --trigger` |
-| Memory organization on request | [`pmo-organize`](skills/pmo-organize/SKILL.md) skill: propose duplicates, contradictions, stale items; apply only accepted changes as superseding records |
-| Diagnosis and repair | `pmo doctor`; [`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md) skill applies only content-preserving repairs after a backup |
-| Claude Code / Codex in the vault | Deployed `AGENTS.md` (and `CLAUDE.md`, which imports it) points agents to `START_HERE.md` and the `pmo` CLI |
-| PMO in any folder (MCP) | `pmo mcp` exposes PMO tools and short instructions over MCP; connected sessions are PMO-aware, disconnecting turns PMO off |
-| Correction and replacement handling | Resolves `supersedes` and excludes old records from current views |
-| Explicit information vs. inference | MEMORY and NOW use the configured confidence threshold and label accepted inferences |
-| MEMORY / NOW / GUARDRAILS / INDEX | Rebuildable through the CLI; cloud assistants can follow `skills/pmo-refresh-views/SKILL.md` when raw Drive writes are available |
-| Session logs and daily summaries | Turn ingestion and generation of a selected day's summary implemented; no session file is written while `daily.enabled` is false (the default) |
-| Local search, duplicate detection, backups | Available through the CLI |
-| System updates and migrations | Deployment, drift detection, backups and schema migration foundation implemented; [`pmo-update`](skills/pmo-update/SKILL.md) skill; known limitations below |
-| Setup from ChatGPT | Confirmed with `skills/pmo-setup/SKILL.md` and the Google Drive connection |
-| Setup from the Claude app | Same skill; not yet confirmed. Each app must verify its Drive write/readback capabilities at runtime |
-| Cloud memory maintenance, suggestions and view refresh | Runtime rules live in `START_HERE.md`; connector-specific write/rebuild capabilities still vary |
-| Gemini and other assistants | Future integration targets through the shared protocol; not verified |
-| Automatic memory across all assistants or background processing | Not provided; requires integration and an authorized saving policy |
+**Not yet**
 
-External writes do not currently refresh views or the search index automatically. In the CLI workflow, run `pmo rebuild` when needed. A scheduled job is not required.
+- Automatic memory across all assistants, or background processing
+- Refreshing the lists and search index automatically after new memories are written. Ask an assistant to "update the lists" or run `pmo rebuild` when needed (no scheduled job is required)
 
-## Storage and ownership
+## What is in your Drive
 
-| Layer | Contents | Ownership and updates |
+| Layer | Contents | Ownership |
 |---|---|---|
-| System | `START_HERE.md`, `AGENTS.md`, `CLAUDE.md`, shared protocols, schemas, templates, skills | Deployed from a distribution; not changed during ordinary AI memory writes. Pre-existing user `AGENTS.md`/`CLAUDE.md` files are never overwritten |
-| Config | Language, saving and presentation preferences; `custom_rules.md` for your own assistant rules | User-owned; preserved across system updates |
-| Data | Memory, corrections, projects, session logs | Private canonical records; not system deployment targets |
-| Runtime | Search database, locks | Disposable local files outside the synchronized vault |
+| System (`_system/`, `START_HERE.md`, `AGENTS.md`, `CLAUDE.md`) | Rules, formats, templates, skills | Deployed and updated by PMO; assistants do not change it in ordinary use |
+| Config (`_config/`) | Language, saving policy and other settings; your own extra rules | Yours; kept across PMO updates |
+| Data (`10_Memory/` etc.) | Memories, corrections, session logs | Yours; never overwritten by PMO updates |
+| Runtime | Search index, locks | Disposable local files on your computer, never in Drive |
 
 ```text
 PMO/
-├─ START_HERE.md        # entrypoint every assistant reads first
-├─ AGENTS.md / CLAUDE.md  # entrypoint for Codex / Claude Code (points to START_HERE)
+├─ START_HERE.md        # entry point every assistant reads first
+├─ AGENTS.md / CLAUDE.md  # entry point for Codex / Claude Code (points to START_HERE)
 ├─ SYSTEM_VERSION.md
-├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # rebuildable views
-├─ _system/             # protocols, schemas, templates, skills
-├─ _config/             # settings.yaml, custom_rules.md
+├─ MEMORY.md / NOW.md / GUARDRAILS.md / INDEX.md  # lists rebuilt from records
+├─ _system/             # rules, templates, skills
+├─ _config/             # your settings (settings.yaml) and extra rules (custom_rules.md)
 ├─ 10_Memory/
-│  ├─ Events/           # one file per memory; preferences, facts, decisions… by type
-│  └─ Corrections/
-├─ 50_Daily/
+│  ├─ Events/           # memories (one file each; preferences, facts, decisions… by type)
+│  └─ Corrections/      # corrections (one file each)
+├─ 50_Daily/            # session logs (when enabled)
 └─ 80_Archive/
 ```
 
-Session logs use `50_Daily/YYYY-MM-DD/<provider>_<session-id>_<topic>.md` to reduce contention on shared files. This does not eliminate synchronization conflicts; shared views and concurrent writes still need coordination.
+| List | Contents |
+|---|---|
+| `GUARDRAILS.md` | Corrections; assistants read this with top priority |
+| `MEMORY.md` | Long-term memories |
+| `NOW.md` | Recent interests and work in progress |
+| `INDEX.md` | Table of contents |
 
-## Try the local CLI
+Session logs are written one file per conversation, such as `50_Daily/YYYY-MM-DD/<provider>_<session-id>_<topic>.md`, to reduce concurrent writes to the same file. This does not eliminate sync conflicts entirely.
 
-Requires Python 3.11+. Obtain a branch or release containing this README and `pyproject.toml`, and run the commands from its source directory, separate from your private vault. To try an unmerged pull request, check out that PR's branch first.
+## Use on a computer (optional)
+
+Skip this section if you only use PMO from phone or chat apps. It is for using PMO from Claude Code or Codex, or for searching and rebuilding lists on your computer.
+
+On a computer you work with three different folders:
+
+| Folder | Contents | Location | What you do with it |
+|---|---|---|---|
+| Repository (`personal-memory-os`) | The PMO machinery (command and distribution files) | Anywhere on your computer | Only for `pip install` and PMO updates. **Its contents are public on GitHub, so never put memories here** |
+| PMO folder (`My Drive/PMO`) | Your memories and settings | Google Drive (only you can see it) | Assistants and the `pmo` command read and write it. Open it in Obsidian |
+| Your project folders | Your everyday work | Anywhere | Start Claude Code or Codex here; MCP connects them to PMO |
+
+Keep the three in separate places. Do not create the PMO folder inside the repository.
+
+### Use from any folder (MCP)
+
+For Claude Code and Codex, registering the MCP server `pmo mcp` is recommended.
+
+- **Easy on/off**: in a connected session the assistant loads corrections and memories first and records through PMO tools. Disconnect it and no PMO instructions or tools are loaded.
+- **On by default if you like**: registered at user scope in Claude Code, it is active in every new session. Disable it per project with `/mcp`.
+
+```bash
+claude mcp add --scope user pmo -- pmo mcp --vault "/path/to/PMO"
+```
+
+MCP requires installing the command as `personal-memory-os[mcp]` (see [Install the command](#install-the-command)). For registering with Codex and turning it off, see the [MCP guide](docs/mcp.ja.md) (Japanese).
+
+### Install the command
+
+Requires Python 3.11 or later. Get this repository and run the commands from it, separate from your memory folder.
 
 ```bash
 python -m pip install .
@@ -179,44 +190,80 @@ pmo search /path/to/PMO "concise"
 pmo doctor /path/to/PMO
 ```
 
-Replace `/path/to/PMO` with your actual destination. For local CLI use with Drive, mirror the folder so tools can read and write ordinary files. If PMO already exists in Drive, skip `pmo install`. You can also open that private folder in Obsidian.
+Replace `/path/to/PMO` with your actual destination. To use PMO in Drive, install Google Drive for desktop so the folder can be read and written as an ordinary folder. If PMO already exists in Drive, skip `pmo install`.
 
-Claude Code and Codex (including via the Claudian Obsidian plugin) started in the PMO folder load its `AGENTS.md`/`CLAUDE.md` automatically. Put your own assistant rules in `_config/custom_rules.md`; `AGENTS.md` and `CLAUDE.md` are replaced on updates.
+Main commands:
 
-To use PMO from any folder, install `personal-memory-os[mcp]` and register the MCP server. At user scope it is on in every new session; disable it per project with `/mcp` or remove it to turn PMO off. See [docs/mcp.ja.md](docs/mcp.ja.md) (Japanese).
+| Command | What it does |
+|---|---|
+| `pmo record` | Save one memory |
+| `pmo correct <vault> --wrong "..." --correct "..." [--trigger "..."]` | Save a correction (`--trigger` adds the situation it applies to) |
+| `pmo rebuild` | Rebuild the lists and search index |
+| `pmo search` | Search memories |
+| `pmo doctor` | Check for broken files and configuration drift |
+| `pmo status` | Show the PMO version and whether system files were modified |
+| `pmo update` | Deploy the new PMO system into Drive (takes a backup first) |
+| `pmo backup` | Back up everything as a zip |
+| `pmo duplicates` | Find duplicate memories |
+| `pmo set-scope <vault> <id>… --scope <category>` | Change only the scope of existing records |
+| `pmo daily <vault> YYYY-MM-DD` | Rebuild a day's summary |
+| `pmo ingest-turn <vault> turn.json` | Import memories and session logs prepared by an assistant (including `supersedes` for replacements) |
 
-```bash
-claude mcp add --scope user pmo -- pmo mcp --vault "/path/to/PMO"
+`ingest-turn` is an entry point for data an assistant has already structured. It does not read conversations or extract memories from them automatically.
+
+## Settings and caveats
+
+**Settings**: `_config/settings.yaml` sets the saving policy (whether to save automatically), whether daily records are on, language and more. The command itself uses the timezone, the confidence threshold for showing inferences, and the NOW window. Language settings are instructions for assistants; command headings are currently English. Some settings, such as automatic archiving, exist but are not implemented yet.
+
+**Updates**: `pmo update` deploys **the PMO installed on your computer** into Drive. It does not download the latest version from GitHub. Upgrade the local package first, and never update with a version older than the one in Drive. A backup is written to `PMO-Backups` beside the vault before updating. If system files were modified by hand, the update stops. See [`pmo-update`](skills/pmo-update/SKILL.md).
+
+**Search**: the search index lives under `~/.personal-memory-os/` on your computer and can always be rebuilt from Markdown. Run `pmo rebuild` before searching newly added memories.
+
+**Known issues**:
+
+- Update protection does not work when the manifest is missing
+- Windows needs extra setup for timezone handling
+- Retrying a partially failed `ingest-turn` is not fully handled
+- Concurrent daily updates are fragile
+
+Protection against conflicts and failed updates is not complete yet. See the [design and acceptance criteria](docs/local-optional-design.ja.md#実装状況と受け入れ条件) (Japanese).
+
+## Why PMO
+
+### Why go beyond Obsidian alone?
+
+Owning knowledge as Markdown and combining Obsidian with AI is a foundation of PMO too. Claude Code and Codex can work with files on your computer directly.
+
+But conversations with AI do not only happen at a desk. ChatGPT on a phone during a commute, Claude while thinking something through, Claude Code or Codex while working. PMO aims to let **mobile, cloud and desktop assistants use the same memory**. Obsidian remains a tool for reading and organizing that memory yourself.
+
+```text
+ChatGPT / Claude / Codex / Claude Code / …
+                      ↕
+            Personal Memory OS
+       Shared rules, formats and tools
+                      ↕
+        Your Markdown files ←→ Obsidian
+           Your Drive (private)
 ```
 
-Other commands:
+### Why open source?
 
-```bash
-pmo correct <vault> --wrong "..." --correct "..." [--trigger "..."]
-pmo ingest-turn <vault> turn.json
-pmo daily <vault> YYYY-MM-DD
-pmo status <vault>
-pmo duplicates <vault>
-pmo set-scope <vault> <id>... --scope <category>
-pmo backup <vault>
-pmo update <vault>
-```
+Building a memory system to use with AI involves many decisions beyond storage:
 
-`ingest-turn` accepts structured memory and session records prepared by an agent, including `supersedes` and `status` for replacing or retiring records. It does not automatically connect to a conversation service or extract memory candidates from raw conversation text.
+- How to organize folders and what to keep long term
+- When, if ever, an AI inference should become memory
+- How corrections should take precedence over older memory
+- How to reduce conflicts when several assistants write at once
+- How to summarize daily conversations
+- How to handle search and backups, and protect existing memory when the system is updated
 
-## Configuration, updates and current limitations
+No one should have to design this from scratch. **Once someone has solved a piece, the next person should be able to use it as is.** That is why PMO is open source.
 
-`_config/settings.yaml` contains both instructions for assistants and values used by the CLI. The CLI reads the timezone, inferred-memory confidence threshold and NOW window. Language preferences guide assistants; CLI headings are currently English. Some settings, including automatic archiving, describe intended behavior whose implementation is still pending.
-
-`pmo update` **deploys the already installed package into the vault**. It does not download a GitHub release. Upgrade the package from your selected version first (never older than the vault), then update the vault. Backups default to `PMO-Backups` beside the vault. Updates stop on System drift. See the [`pmo-update`](skills/pmo-update/SKILL.md) skill.
-
-The search database lives under `~/.personal-memory-os/` and can be rebuilt from Markdown. Run `pmo rebuild` before searching newly added records.
-
-Known remaining issues include update protection when the manifest is missing, Windows timezone dependencies, partial turn ingestion and retries, and concurrent Daily updates. This version is not yet a complete solution to concurrency and update failures. See the [design and acceptance criteria](docs/local-optional-design.ja.md#実装状況と受け入れ条件).
+GitHub holds only the machinery (rules, formats, templates, update tools). Each person's memory stays private in their own Drive.
 
 ## Development and contributions
 
-Keep personal memory in private storage. Do not add real memory, exported conversations, credentials or private vault contents to the public repository or issues.
+Do not put your own memories, exported conversations, passwords, API keys or similar in this repository or in issues.
 
 ```bash
 python -m pip install -e '.[dev]'
