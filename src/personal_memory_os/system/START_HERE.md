@@ -51,6 +51,15 @@ When the user asks to edit memory represented in a view:
 
 When generated views may be stale after canonical writes, or when the user asks to refresh/rebuild/regenerate them, follow `_system/skills/pmo-refresh-views/SKILL.md`. Prefer the local `pmo rebuild` implementation when available; otherwise use the connector-driven procedure in that skill.
 
+## Writing canonical files
+
+Malformed files cannot be parsed and are not reflected in generated views. When creating a memory event, correction or Daily session file:
+
+1. Read the matching template in `_system/templates/` (`memory-event.md`, `correction.md`, `daily-session.md`) and follow its structure exactly. Do not add frontmatter keys the template and protocol do not define.
+2. Write UTF-8 without a BOM, with LF line endings. The first line must be exactly `---`.
+3. For corrections, put the wrong and correct understanding in the body under `## Wrong assumption` and `## Correct understanding`, not in frontmatter.
+4. Read the file back when the connector supports it, and confirm the format before reporting it as saved.
+
 ## Write boundary
 
 - `_system/**`: read-only to ordinary AI operation. Updated only by PMO deployment/update.

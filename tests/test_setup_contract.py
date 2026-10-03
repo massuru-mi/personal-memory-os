@@ -54,3 +54,16 @@ def test_refresh_views_skill_is_deployed_and_referenced():
     assert "pmo-refresh-views/SKILL.md" in start
     assert "pmo rebuild" in repo_skill
     assert "fail closed" in repo_skill
+
+
+def test_canonical_file_format_rules_are_in_system_docs():
+    start = read_system_text("START_HERE.md")
+    assert "_system/templates/" in start
+    assert "UTF-8 without a BOM" in start
+    assert "LF line endings" in start
+    correction = read_system_text("protocols/CORRECTION_PROTOCOL.md")
+    assert "## Wrong assumption" in correction
+    assert "## Correct understanding" in correction
+    assert "never put these in frontmatter" in correction
+    assert "_system/templates/memory-event.md" in read_system_text("protocols/MEMORY_PROTOCOL.md")
+    assert "_system/templates/daily-session.md" in read_system_text("protocols/DAILY_PROTOCOL.md")
