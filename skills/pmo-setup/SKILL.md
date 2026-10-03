@@ -146,6 +146,23 @@ PMOへの読み書きが必要な場合はGoogle Drive接続を使用してく�
 
 Use the app's appropriate persistent instruction surface. If you cannot change that setting directly, provide the text for the user to paste; do not claim it was registered.
 
+Finally, tell the user that conversations from before the setup can be brought into PMO one chat at a time: after the instruction above is registered, open a past chat in this app and send the prompt below. Do not import past chats yourself (non-negotiable rule 8); only explain how. Give the prompt in the user's language; for a Japanese-speaking user:
+
+```text
+このチャットの内容をPMOに登録してください。
+
+まずGoogle DriveのSTART_HEREを読み、最新のPMOルールに従ってください。
+このチャット全体から、今後も再利用価値のある事実・好み・決定・プロジェクト情報・修正事項を抽出し、適切なCanonical Recordへ保存してください。
+
+- 会話全文は保存せず、重要情報だけを整理してください。
+- 各記録には分野（scope）を付けてください。すべての会話で必要なものだけglobalにし、それ以外は既存の分野を使い、合うものがなければ新しい分野を作ってください。
+- 私がはっきり言ったことと、AIの推測・提案は区別し、推測を私の事実として保存しないでください。
+- 時間が経つと変わりうる情報は「いつ時点の情報か」を本文に書いてください。
+- 既存情報との重複・矛盾も確認し、必要ならCorrection Protocolに従ってください。
+
+保存後、何をPMOに登録したか（分野ごと）を簡潔に教えてください。
+```
+
 ## Resuming after an interruption
 
 When the user says 「続けて」, "continue", or asks to resume a setup that stopped part-way:
