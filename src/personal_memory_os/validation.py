@@ -94,3 +94,5 @@ def validate_document(meta: dict, body: str, expected_schema: str) -> None:
             content[heading.strip()] = text.strip()
         for heading in ("Wrong assumption", "Correct understanding"):
             require_text(content.get(heading), heading)
+        if "Trigger" in content:
+            require_text(content["Trigger"], "Trigger")
