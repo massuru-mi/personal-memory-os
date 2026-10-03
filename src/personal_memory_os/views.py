@@ -78,21 +78,43 @@ def render_guardrails(vault_root: Path) -> Path:
     return target
 
 
-def render_now(vault_root: Path) -> Path:
-    settings = load_settings(vault_root)
-    days = int(settings.get("views", {}).get("now_window_days", 30))
+NOW_TYPES = {"project_progress", "open_loop", "current_focus", "decision"}
+NOW_LIMIT = 80
+
+
+def active_memory_rows(vault_root: Path):
+    """Active memory events eligible for views (confidence filter and supersession applied)."""
+    return _memory_rows(vault_root)
+
+
+def now_rows(vault_root: Path):
+    """Records shown in NOW.md, newest first: (created_at, meta, body, path)."""
+    days = now_window_days(vault_root)
     cutoff = datetime.now().astimezone() - timedelta(days=days)
-    allowed = {"project_progress", "open_loop", "current_focus", "decision"}
     rows = []
     for meta, body, path in _memory_rows(vault_root):
-        if meta.get("type") not in allowed:
+        if meta.get("type") not in NOW_TYPES:
             continue
         created = aware_datetime(meta["created_at"])
         if created >= cutoff:
             rows.append((created, meta, body, path))
     rows.sort(key=lambda x: x[0], reverse=True)
+    return rows[:NOW_LIMIT]
+
+
+def now_window_days(vault_root: Path) -> int:
+    return int(load_settings(vault_root).get("views", {}).get("now_window_days", 30))
+
+
+def inference_label(meta) -> str:
+    return _inference_label(meta)
+
+
+def render_now(vault_root: Path) -> Path:
+    days = now_window_days(vault_root)
+    rows = now_rows(vault_root)
     chunks = ["# Now", f"_Generated from active memory in the last {days} days._"]
-    for _, meta, body, path in rows[:80]:
+    for _, meta, body, path in rows:
         chunks.append(f"- **{meta.get('type')}**: {body}{_inference_label(meta)} · {_fmt_link(path, vault_root)}")
     target = vault_root / "NOW.md"
     atomic_write_text(target, "\n".join(chunks).rstrip() + "\n")

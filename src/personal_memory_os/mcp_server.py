@@ -19,8 +19,8 @@ from .events import new_event_id, now_for_vault, read_events, write_correction, 
 from .models import CorrectionEvent, MemoryEvent
 from .paths import VaultPaths
 from .runtime_index import rebuild_index, search
-from .validation import CORRECTION_SCHEMA
-from .views import rebuild_views
+from .validation import CORRECTION_SCHEMA, aware_datetime
+from .views import active_memory_rows, inference_label, now_rows, rebuild_views
 
 VAULT_ENV = "PMO_VAULT"
 
@@ -39,14 +39,18 @@ MemoryType = Literal[
     "current_focus", "interest", "relationship", "knowledge",
 ]
 Priority = Literal["low", "normal", "high", "critical"]
-VIEW_FILES = {"guardrails": "GUARDRAILS.md", "memory": "MEMORY.md", "now": "NOW.md"}
+DEFAULT_MAX_CONTEXT_CHARS = 8000
+MIN_MAX_CONTEXT_CHARS = 1000
+ITEM_MAX_CHARS = 400
+NOW_BUDGET_SHARE = 0.4
 
 
 class PMOTools:
     """Tool implementations, kept independent of the MCP SDK for testing."""
 
-    def __init__(self, vault: Path | None):
+    def __init__(self, vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS):
         self.vault = vault.expanduser().resolve() if vault else None
+        self.max_context_chars = max_context_chars
         self._index_fresh = False
 
     # -- availability -----------------------------------------------------
@@ -67,7 +71,7 @@ class PMOTools:
 
     # -- read ---------------------------------------------------------------
 
-    def bootstrap(self) -> dict[str, Any]:
+    def bootstrap(self, max_chars: int | None = None) -> dict[str, Any]:
         problem = self._unavailable()
         if problem:
             return problem
@@ -95,9 +99,13 @@ class PMOTools:
             "rules": "Full rules: START_HERE.md and _system/protocols/ in the vault (read with pmo_read_file).",
             "warnings": warnings,
         }
-        for key, name in VIEW_FILES.items():
-            path = vault / name
-            result[key] = path.read_text(encoding="utf-8") if path.is_file() else ""
+        guardrails = vault / "GUARDRAILS.md"
+        result["guardrails"] = guardrails.read_text(encoding="utf-8") if guardrails.is_file() else ""
+        try:
+            result.update(self._budgeted_memory(vault, max_chars or self.max_context_chars, len(result["guardrails"])))
+        except Exception as exc:  # noqa: BLE001 - unreadable records must not hide guardrails
+            warnings.append(f"Memory could not be loaded ({exc}). Follow _system/skills/pmo-doctor-repair/SKILL.md.")
+            result.update({"now": "", "memory": "", "omitted": {"now": 0, "memory": 0}})
         return result
 
     def search(self, query: str, limit: int = 10) -> dict[str, Any]:
@@ -178,6 +186,58 @@ class PMOTools:
 
     # -- helpers ------------------------------------------------------------
 
+    def _budgeted_memory(self, vault: Path, max_chars: int, used: int) -> dict[str, Any]:
+        """Fill the remaining budget with NOW items (newest first) and memory (most important first).
+
+        Guardrails are always returned in full and count against the budget first.
+        """
+        budget = max(max_chars, MIN_MAX_CONTEXT_CHARS) - used
+        now = now_rows(vault)
+        now_ids = {meta["id"] for _, meta, _, _ in now}
+        memory = [row for row in active_memory_rows(vault) if row[0]["id"] not in now_ids]
+        memory.sort(
+            key=lambda row: (float(row[0].get("importance", 0)), aware_datetime(row[0]["created_at"])),
+            reverse=True,
+        )
+        now_items = [(meta, body, path) for _, meta, body, path in now]
+        # NOW gets at most a share of the budget first so durable memory (preferences, facts) is never
+        # crowded out by recent activity; whatever memory leaves unused flows back to NOW.
+        now_lines, rest = self._take(vault, now_items, int(budget * NOW_BUDGET_SHARE))
+        budget -= int(budget * NOW_BUDGET_SHARE) - rest
+        memory_lines, budget = self._take(vault, memory, budget)
+        more_now, budget = self._take(vault, now_items[len(now_lines):], budget)
+        now_lines += more_now
+        omitted = {"now": len(now) - len(now_lines), "memory": len(memory) - len(memory_lines)}
+        result: dict[str, Any] = {
+            "now": "\n".join(now_lines),
+            "memory": "\n".join(memory_lines),
+            "omitted": omitted,
+        }
+        if omitted["now"] or omitted["memory"]:
+            result["more"] = (
+                "Some lower-priority items were omitted to save context. Use pmo_search for a topic, "
+                "or pmo_read_file('MEMORY.md') / pmo_read_file('NOW.md') for the full views."
+            )
+        return result
+
+    @staticmethod
+    def _take(vault: Path, rows, budget: int) -> tuple[list[str], int]:
+        lines: list[str] = []
+        for meta, body, path in rows:
+            text = " ".join(body.split())
+            if len(text) > ITEM_MAX_CHARS:
+                text = text[: ITEM_MAX_CHARS - 1] + "…"
+            topic = f" [{meta['topic']}]" if meta.get("topic") else ""
+            line = (
+                f"- ({meta.get('type')}) {text}{topic}{inference_label(meta)}"
+                f" · {path.relative_to(vault).as_posix()}"
+            )
+            if len(line) + 1 > budget:
+                break
+            lines.append(line)
+            budget -= len(line) + 1
+        return lines, budget
+
     def _after_write(self, vault: Path, record_id: str, path: Path) -> dict[str, Any]:
         rebuild_views(vault)
         self._index_fresh = False
@@ -206,21 +266,23 @@ class PMOTools:
         return newest > guardrails.stat().st_mtime
 
 
-def build_server(vault: Path | None):
+def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS):
     """Create the MCP server. Requires the optional ``mcp`` dependency."""
     from mcp.server.mcpserver import MCPServer
     from mcp.types import ToolAnnotations
 
-    tools = PMOTools(vault)
+    tools = PMOTools(vault, max_context_chars)
     server = MCPServer(name="pmo", title="Personal Memory OS", instructions=INSTRUCTIONS)
     read_only = ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=False)
     append_only = ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=False)
 
     @server.tool(annotations=read_only)
-    def pmo_bootstrap() -> dict[str, Any]:
-        """Load the user's PMO context: guardrails (corrections), memory, current focus, memory policy and
-        custom rules. Call once at the start of a session. Returns available=false if PMO cannot be reached."""
-        return tools.bootstrap()
+    def pmo_bootstrap(max_chars: int | None = None) -> dict[str, Any]:
+        """Load the user's PMO context: all guardrails (corrections), then current focus and the most important
+        memories within a character budget, plus memory policy and custom rules. Call once at the start of a
+        session. "omitted" counts items left out; find them with pmo_search. Returns available=false if PMO
+        cannot be reached."""
+        return tools.bootstrap(max_chars)
 
     @server.tool(annotations=read_only)
     def pmo_search(query: str, limit: int = 10) -> dict[str, Any]:
@@ -289,5 +351,5 @@ def resolve_vault(value: str | None) -> Path | None:
     return Path(raw) if raw else None
 
 
-def serve(vault: Path | None) -> None:
-    build_server(vault).run("stdio")
+def serve(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS) -> None:
+    build_server(vault, max_context_chars).run("stdio")
