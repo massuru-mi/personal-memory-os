@@ -10,6 +10,8 @@
 
 Canonical memory lives in `10_Memory/Events/` (one file per memory event; preferences, facts, decisions and other kinds are distinguished by `type`) and `10_Memory/Corrections/`. Install no longer creates `10_Memory/Self`, `10_Memory/Preferences` or `10_Memory/Decisions`: nothing reads or writes them. Existing vaults may still contain these folders; they are user Data and are left in place, never deleted by PMO.
 
+Install also no longer creates `00_Inbox`, `20_Projects`, `30_Knowledge` or `40_Decisions`. Projects, knowledge and decisions are recorded as memory events (`type: project_progress`, `knowledge`, `decision`) and grouped by `scope`. Memory save proposals are made in the conversation and saved as events only when approved; there is no candidate queue. If these folders already exist, they remain user Data: still protected from updates and never deleted by PMO.
+
 ## Generated
 
 `SYSTEM_VERSION.md`, `MEMORY.md`, `NOW.md`, `GUARDRAILS.md`, `INDEX.md` and daily `SUMMARY.md` are machine-generated artifacts.
