@@ -222,6 +222,7 @@ pmo doctor /path/to/PMO
 | `pmo update` | PMO の新しい仕組みをドライブに反映する（先にバックアップを取る） |
 | `pmo backup` | まるごと zip でバックアップする |
 | `pmo duplicates` | 重複した記憶を探す |
+| `pmo set-scope <vault> <ID>… --scope <分野>` | 既存の記録の分野だけを書き換える |
 | `pmo daily <vault> YYYY-MM-DD` | その日のまとめを作り直す |
 | `pmo ingest-turn <vault> turn.json` | AI が整理した記憶と会話ログをまとめて取り込む（記憶の置き換え `supersedes` もこれで指定する） |
 

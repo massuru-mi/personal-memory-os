@@ -14,6 +14,7 @@ MCP を接続したセッションでは、AI は PMO を前提に動きます�
 | `pmo_read_file` | Vault 内の `.md`／`.yaml` を 1 つ読む（Vault の外は読めない） | なし |
 | `pmo_record_memory` | 記憶を 1 件追記する。`scope` で分野を指定。`supersedes` で置き換え、`status: archived` で引退 | 追記 |
 | `pmo_record_correction` | 訂正を 1 件追記する。`scope`、`trigger` も指定できる | 追記 |
+| `pmo_set_scope` | 既存の記録の分野（scope）だけを、その場で書き換える。本文や他の項目は変えない | scope の行のみ |
 | `pmo_rebuild` | 一覧と検索用データを作り直す | 一覧のみ |
 | `pmo_doctor` | Vault を点検する | なし |
 
@@ -35,7 +36,7 @@ Vault が見つからない場合（Google ドライブのアプリが止まっ�
 - `global`：すべての会話で使う（振る舞い全般のルール、あなたの基本的な情報）。`scope` がない古い記録も global 扱い
 - 分野のパス（例：`digital/video-editing`、`daily-life/health`）：その分野の会話でだけ使う。親の分野（`digital`）の記録は子の分野でも使う
 
-分野の一覧はリポジトリで決めていません。記録に付いた `scope` から自動で集めます（`INDEX.md` の Categories と `pmo_bootstrap` の `categories`）。AI は記録するときに既存の分野を使い、合うものがなければ新しい分野を作ります。分野の分割・統合・付け直しは `pmo-organize` が提案します。
+分野の一覧はリポジトリで決めていません。記録に付いた `scope` から自動で集めます（`INDEX.md` の Categories と `pmo_bootstrap` の `categories`）。AI は記録するときに既存の分野を使い、合うものがなければ新しい分野を作ります。分野の分割・統合・付け直しは `pmo-organize` が提案し、承認されたものを `pmo set-scope`／`pmo_set_scope` で反映します。scope は分類のための付帯情報なので、記録を置き換えずにその場で書き換えます。
 
 セッション開始時は global だけを読み込みます。会話が分野に入ったら、AI が `pmo_category_context` でその分野（複数可）の訂正と記憶を読み込みます。分野の狭い訂正（特定の商品の話など）が毎回読み込まれることはありません。
 
@@ -94,7 +95,7 @@ codex mcp add pmo -- pmo mcp --vault "/path/to/PMO"
 
 ## 注意点
 
-- 書き込みは追記だけです。既存の記録の編集や削除はしません。変えたいときは、新しい記録で置き換えます。
+- 記憶・訂正の内容変更は追記（`supersedes`）で行います。分類用の `scope` だけは `pmo_set_scope` で既存記録の `scope` 行を変更します。記録の削除はしません。
 - 保存してよいかどうかは、ツールではなく保存方針（`memory.auto_save`）と AI の判断に任せています。ツールは書式と検証を保証するだけです。
 - 検索用データはパソコン側（`~/.personal-memory-os/`）に作ります。サーバ起動後の最初の検索と、書き込みの後に作り直します。
 - スマホのアプリなど、このパソコンの外の AI からは使えません。

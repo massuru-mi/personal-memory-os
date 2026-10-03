@@ -116,3 +116,58 @@ def test_cli_and_ingest_accept_scope(vault: Path, capsys):
         for p in (vault / "10_Memory").rglob("*.md")
     )
     assert scopes == [("digital",), ("work",), ("work", "family")]
+
+
+def test_set_scope_changes_only_the_scope_line(vault: Path):
+    tools = PMOTools(vault)
+    saved = tools.record_memory("fact", "Body stays exactly the same", topic="t")
+    path = vault / saved["path"]
+    before = path.read_text(encoding="utf-8")
+
+    from personal_memory_os.events import set_scope
+    set_scope(vault, [saved["id"]], ["子ども"])
+    after = path.read_text(encoding="utf-8")
+    assert load_file(path)[0]["scope"] == ["子ども"]
+    assert [line for line in after.splitlines() if not line.startswith("scope:")] == before.splitlines()
+
+    set_scope(vault, [saved["id"]], ["global"])
+    assert after.count("scope:") == 1
+    assert load_file(path)[0]["scope"] == ["global"]
+
+
+def test_set_scope_replaces_block_list_and_handles_crlf_bom(vault: Path):
+    tools = PMOTools(vault)
+    saved = tools.record_correction("w", "c", scope=["a", "b"])
+    path = vault / saved["path"]
+    text = path.read_text(encoding="utf-8").replace('scope:\n- a\n- b\n', 'scope:\n  - a\n  - b\n')
+    path.write_bytes(b"\xef\xbb\xbf" + text.replace("\n", "\r\n").encode("utf-8"))
+
+    from personal_memory_os.events import set_scope
+    set_scope(vault, [saved["id"]], ["日常生活/健康"])
+    meta, body = load_file(path)
+    assert meta["scope"] == ["日常生活/健康"]
+    assert "## Wrong assumption\nw" in body
+    assert next(c for c in run_doctor(vault) if c.name == "memory_parse").ok
+
+
+def test_set_scope_is_all_or_nothing(vault: Path):
+    tools = PMOTools(vault)
+    saved = tools.record_memory("fact", "x")
+    from personal_memory_os.events import set_scope
+    with pytest.raises(ValidationError):
+        set_scope(vault, [saved["id"], "no-such-id"], ["work"])
+    with pytest.raises(ValidationError):
+        set_scope(vault, [saved["id"]], ["global/x"])
+    assert "scope" not in load_file(vault / saved["path"])[0]
+
+
+def test_set_scope_via_cli_and_mcp_updates_views(vault: Path):
+    tools = PMOTools(vault)
+    a = tools.record_correction("Blue box is granules", "Blue box is tablets")
+    b = tools.record_memory("fact", "Child sleeps at 23:00")
+    assert main(["set-scope", str(vault), a["id"], "--scope", "日常生活/健康"]) == 0
+    tools.set_scope([b["id"]], ["子ども"])
+    guardrails = (vault / "GUARDRAILS.md").read_text(encoding="utf-8")
+    assert "## 日常生活/健康" in guardrails and "## Global" not in guardrails
+    assert "Blue box" not in tools.bootstrap()["guardrails"]
+    assert "Child sleeps" in tools.category_context(["子ども"])["memory"]
