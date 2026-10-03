@@ -22,10 +22,10 @@ def test_install_creates_owned_and_private_layers(tmp_path: Path):
 def test_install_does_not_create_unused_note_folders(tmp_path: Path):
     vault = tmp_path / "vault"
     install(vault)
-    for name in ("20_Projects", "30_Knowledge", "40_Decisions"):
+    for name in ("00_Inbox", "20_Projects", "30_Knowledge", "40_Decisions"):
         assert not (vault / name).exists()
         assert f"[[{name}]]" not in (vault / "INDEX.md").read_text(encoding="utf-8")
-    for name in ("00_Inbox", "50_Daily", "80_Archive"):
+    for name in ("50_Daily", "80_Archive"):
         assert (vault / name).is_dir()
 
 

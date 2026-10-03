@@ -10,7 +10,7 @@
 - create user-owned `_config/custom_rules.md` on install; `START_HERE.md` reads it
 - add optional `## Trigger` section to corrections (`pmo correct --trigger`, `ingest-turn` `trigger`), shown in GUARDRAILS
 - stop creating unused `10_Memory/Self`, `10_Memory/Preferences` and `10_Memory/Decisions`; existing folders are left in place
-- stop creating unused `20_Projects`, `30_Knowledge` and `40_Decisions`, and drop their links from `INDEX.md`; existing folders stay protected user Data
+- stop creating unused `00_Inbox/MemoryCandidates`, `20_Projects`, `30_Knowledge` and `40_Decisions`, and drop the note-folder links from `INDEX.md`; existing folders stay protected user Data
 - add skills `pmo-remember`, `pmo-doctor-repair`, `pmo-update` and `pmo-organize`, deployed under `_system/skills/` and referenced from `START_HERE.md`
 - add design memo `docs/agent-integration-proposals.ja.md`
 - add `pmo mcp`: PMO operations as an MCP server with short session instructions; optional extra `personal-memory-os[mcp]`
