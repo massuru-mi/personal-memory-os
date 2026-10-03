@@ -67,3 +67,19 @@ def test_canonical_file_format_rules_are_in_system_docs():
     assert "never put these in frontmatter" in correction
     assert "_system/templates/memory-event.md" in read_system_text("protocols/MEMORY_PROTOCOL.md")
     assert "_system/templates/daily-session.md" in read_system_text("protocols/DAILY_PROTOCOL.md")
+
+
+def test_remember_and_repair_skills_are_deployed_and_referenced():
+    start = read_system_text("START_HERE.md")
+    for name in ("pmo-remember", "pmo-doctor-repair"):
+        repo_skill = (REPO_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert repo_skill == read_system_text(f"skills/{name}/SKILL.md")
+        assert f"_system/skills/{name}/SKILL.md" in start
+    remember = read_system_text("skills/pmo-remember/SKILL.md")
+    assert "pmo correct" in remember and "--trigger" in remember
+    assert "UTF-8 without a BOM" in remember
+    assert "Never put these in frontmatter" in remember
+    repair = read_system_text("skills/pmo-doctor-repair/SKILL.md")
+    assert "pmo backup" in repair
+    assert "content-preserving" in repair
+    assert "--force-system-drift" in repair and "explicit approval" in repair
