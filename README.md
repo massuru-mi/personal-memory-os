@@ -94,6 +94,25 @@ The standard root folder name is **`PMO`**. Detailed runtime behavior lives in t
 
 The setup skill does not grant Drive permissions, create background automation, or make unsupported connector operations available. If a required operation cannot be completed, the assistant must report setup as incomplete rather than simulate success.
 
+### Import past chats
+
+Conversations from before the setup can be imported one chat at a time. After registering the custom instruction, open a past chat in the same app and send:
+
+```text
+Register the useful content of this chat in my PMO.
+
+First read START_HERE in my Google Drive and follow the latest PMO rules.
+From this whole chat, extract facts, preferences, decisions, project information and corrections that will be useful again, and save them as the appropriate canonical records.
+
+- Do not save the transcript; keep only the important information.
+- Give every record a scope: "global" only for what matters in every conversation; otherwise reuse an existing category, or create a new one if none fits.
+- Keep what I said explicitly separate from AI inferences or suggestions; never save an inference as a fact about me.
+- For information that may change over time, state in the record as of when it was true.
+- Check for duplicates and contradictions with existing records, and follow the Correction Protocol when needed.
+
+When done, briefly list what you registered, grouped by scope.
+```
+
 Requests to edit generated views such as `MEMORY.md` must update canonical records first and refresh the view when possible. External writes do not automatically refresh the local FTS index; local CLI users should run `pmo rebuild` when needed.
 
 ## Available today and in development

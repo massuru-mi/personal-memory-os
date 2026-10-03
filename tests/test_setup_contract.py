@@ -152,3 +152,13 @@ def test_setup_skill_resumes_safely_and_readmes_keep_duration_guidance():
     en = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert "続けて" in ja and "5 分以上" in ja
     assert "continue" in en and "five minutes or more" in en
+
+
+def test_setup_skill_and_readmes_explain_importing_past_chats():
+    skill = (REPO_ROOT / "skills" / "pmo-setup" / "SKILL.md").read_text(encoding="utf-8")
+    phase6 = skill.split("## Phase 6")[1].split("## Resuming")[0]
+    assert "このチャットの内容をPMOに登録してください。" in phase6
+    assert "Do not import past chats yourself" in phase6
+    ja = (REPO_ROOT / "README.ja.md").read_text(encoding="utf-8")
+    assert "### 過去のチャットを取り込む" in ja and "scope" in ja
+    assert "### Import past chats" in (REPO_ROOT / "README.md").read_text(encoding="utf-8")
