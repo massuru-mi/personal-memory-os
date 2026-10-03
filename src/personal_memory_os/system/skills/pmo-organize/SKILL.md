@@ -1,11 +1,11 @@
 ---
 name: pmo-organize
-description: Organize a Personal Memory OS (PMO) vault on request — find duplicates, contradictions, stale open loops and weak inferences, propose concrete changes, and apply only the accepted ones as new append-only records that supersede or retire old ones. Use when the user asks to organize, clean up, review, deduplicate or tidy their PMO memory.
+description: Organize a Personal Memory OS (PMO) vault on request — find duplicates, contradictions, stale open loops, weak inferences and unclassified or mis-classified records, propose concrete changes, and apply only the accepted ones. Content changes are new append-only records that supersede or retire old ones; scope (category) changes are made in place with pmo set-scope / pmo_set_scope. Use when the user asks to organize, clean up, review, deduplicate, classify or tidy their PMO memory.
 ---
 
 # PMO Organize Skill
 
-Help the user keep their memory accurate and small. Organizing never edits or deletes existing records: every accepted change is a new record that supersedes the old ones.
+Help the user keep their memory accurate and small. Organizing never deletes records and never edits what a record says: every accepted content change is a new record that supersedes the old ones. The one exception is a record's `scope` (its category), which is classification metadata: classify, split, merge or rename categories in place with `pmo set-scope` / `pmo_set_scope`, never by superseding.
 
 ## Non-negotiable rules
 
