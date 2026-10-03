@@ -105,6 +105,7 @@ Requests to edit generated views such as `MEMORY.md` must update canonical recor
 | Memory organization on request | [`pmo-organize`](skills/pmo-organize/SKILL.md) skill: propose duplicates, contradictions, stale items; apply only accepted changes as superseding records |
 | Diagnosis and repair | `pmo doctor`; [`pmo-doctor-repair`](skills/pmo-doctor-repair/SKILL.md) skill applies only content-preserving repairs after a backup |
 | Claude Code / Codex in the vault | Deployed `AGENTS.md` (and `CLAUDE.md`, which imports it) points agents to `START_HERE.md` and the `pmo` CLI |
+| PMO in any folder (MCP) | `pmo mcp` exposes PMO tools and short instructions over MCP; connected sessions are PMO-aware, disconnecting turns PMO off |
 | Correction and replacement handling | Resolves `supersedes` and excludes old records from current views |
 | Explicit information vs. inference | MEMORY and NOW use the configured confidence threshold and label accepted inferences |
 | MEMORY / NOW / GUARDRAILS / INDEX | Rebuildable through the CLI; cloud assistants can follow `skills/pmo-refresh-views/SKILL.md` when raw Drive writes are available |
@@ -166,6 +167,12 @@ Replace `/path/to/PMO` with your actual destination. For local CLI use with Driv
 
 Claude Code and Codex (including via the Claudian Obsidian plugin) started in the PMO folder load its `AGENTS.md`/`CLAUDE.md` automatically. Put your own assistant rules in `_config/custom_rules.md`; `AGENTS.md` and `CLAUDE.md` are replaced on updates.
 
+To use PMO from any folder, install `personal-memory-os[mcp]` and register the MCP server. At user scope it is on in every new session; disable it per project with `/mcp` or remove it to turn PMO off. See [docs/mcp.ja.md](docs/mcp.ja.md) (Japanese).
+
+```bash
+claude mcp add --scope user pmo -- pmo mcp --vault "/path/to/PMO"
+```
+
 Other commands:
 
 ```bash
@@ -203,7 +210,7 @@ ruff check .
 - [Architecture](docs/architecture.md) / [Storage contract](docs/storage-contract.md)
 - [AI integration](docs/ai-integration.md) / [Memory protocol](docs/memory-protocol.md)
 - Skills: [setup](skills/pmo-setup/SKILL.md) / [remember](skills/pmo-remember/SKILL.md) / [organize](skills/pmo-organize/SKILL.md) / [doctor & repair](skills/pmo-doctor-repair/SKILL.md) / [update](skills/pmo-update/SKILL.md) / [view refresh](skills/pmo-refresh-views/SKILL.md)
-- [Cloud workflow](docs/local-optional-design.ja.md) / [Minimal instruction templates](docs/custom-instructions.ja.md) / [Extension design memo](docs/agent-integration-proposals.ja.md) (Japanese)
+- [MCP server](docs/mcp.ja.md) (Japanese) / [Cloud workflow](docs/local-optional-design.ja.md) / [Minimal instruction templates](docs/custom-instructions.ja.md) / [Extension design memo](docs/agent-integration-proposals.ja.md) (Japanese)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## License
