@@ -166,3 +166,15 @@ def test_unquoted_yaml_timestamp_is_supported(vault):
     path.write_text(dumps(meta, body))
     rebuild_views(vault)
     assert "content-yaml" in (vault / "NOW.md").read_text()
+
+
+def test_bom_and_crlf_memory_from_cloud_writer_is_readable(vault):
+    path = write_memory_event(vault, memory(vault, "bom-crlf"))
+    original_meta, original_body = load_file(path)
+    path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes().replace(b"\n", b"\r\n"))
+
+    meta, body = load_file(path)
+
+    assert meta == original_meta
+    assert body == original_body
+    assert next(c for c in run_doctor(vault) if c.name == "memory_parse").ok
