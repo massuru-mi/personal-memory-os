@@ -85,7 +85,7 @@ PMO can be bootstrapped without installing Python or desktop synchronization sof
    Read https://github.com/massuru-mi/personal-memory-os/blob/main/skills/pmo-setup/SKILL.md and follow it to set up PMO in "My Drive/PMO" in my Google Drive.
    ```
 
-   Change `My Drive/PMO` to use another destination. If an existing PMO is found there, the assistant attaches to it and only fills in missing items instead of creating a duplicate.
+   Setup runs in multiple steps. If the assistant is interrupted part-way, reply "continue"; it checks what already exists and resumes without duplicating anything. Change `My Drive/PMO` to use another destination. If an existing PMO is found there, the assistant attaches to it and only fills in missing items instead of creating a duplicate.
 2. **Before the first Drive write, the setup assistant must have an approved destination.** If the user already supplied a folder/path, that is approval. Otherwise it proposes the default location `My Drive/PMO` and waits for explicit approval.
 3. The setup assistant pins the repository version/commit, reproduces the current `pmo install` layout in that approved location, then lists and reads back the deployed files.
 4. It returns the verified PMO folder link, the verified `START_HERE.md` link, and a minimal instruction snippet for the current AI app. Paste that snippet into ChatGPT custom instructions (or Claude profile/project instructions).
