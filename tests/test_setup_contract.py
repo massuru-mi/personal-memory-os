@@ -138,7 +138,7 @@ def test_organize_skill_intro_matches_in_place_scope_rule():
     assert "pmo set-scope" in head and "never by superseding" in head
 
 
-def test_setup_skill_resumes_and_stays_inside_destination_without_time_estimates():
+def test_setup_skill_resumes_safely_and_readmes_keep_duration_guidance():
     skill = (REPO_ROOT / "skills" / "pmo-setup" / "SKILL.md").read_text(encoding="utf-8")
     intro = skill.split("## Non-negotiable rules")[0]
     assert "複数ステップ" in intro and "続けて" in intro
@@ -150,5 +150,5 @@ def test_setup_skill_resumes_and_stays_inside_destination_without_time_estimates
     assert "nothing was created outside the approved destination" in skill
     ja = (REPO_ROOT / "README.ja.md").read_text(encoding="utf-8")
     en = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    assert "続けて" in ja and "5 分以上" not in ja
-    assert "continue" in en and "five minutes" not in en
+    assert "続けて" in ja and "5 分以上" in ja
+    assert "continue" in en and "five minutes or more" in en
