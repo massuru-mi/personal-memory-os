@@ -8,6 +8,8 @@
 
 `_config/**` and all Data directories are user-owned. The updater may migrate schema with backup, but must not blanket-replace them.
 
+Canonical memory lives in `10_Memory/Events/` (one file per memory event; preferences, facts, decisions and other kinds are distinguished by `type`) and `10_Memory/Corrections/`. Install no longer creates `10_Memory/Self`, `10_Memory/Preferences` or `10_Memory/Decisions`: nothing reads or writes them. Existing vaults may still contain these folders; they are user Data and are left in place, never deleted by PMO.
+
 ## Generated
 
 `SYSTEM_VERSION.md`, `MEMORY.md`, `NOW.md`, `GUARDRAILS.md`, `INDEX.md` and daily `SUMMARY.md` are machine-generated artifacts.

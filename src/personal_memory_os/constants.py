@@ -15,10 +15,7 @@ ARCHIVE_DIR = "80_Archive"
 DATA_DIRECTORIES = (
     f"{INBOX_DIR}/MemoryCandidates",
     f"{MEMORY_DIR}/Events",
-    f"{MEMORY_DIR}/Self",
-    f"{MEMORY_DIR}/Preferences",
     f"{MEMORY_DIR}/Corrections",
-    f"{MEMORY_DIR}/Decisions",
     PROJECTS_DIR,
     KNOWLEDGE_DIR,
     DECISIONS_DIR,
