@@ -13,6 +13,7 @@ from .config import deep_merge, dump_yaml, load_yaml
 from .constants import (
     CUSTOM_RULES_FILE,
     DATA_DIRECTORIES,
+    GENERATED_VIEWS,
     MANIFEST_FILE,
     ROOT_SYSTEM_FILES,
     SETTINGS_FILE,
@@ -102,17 +103,11 @@ def _deploy_system(root: Path) -> list[str]:
         "system": "personal-memory-os",
         "version": __version__,
         "owned_files": owned,
-        "protected_paths": [
-            "_config/**",
-            "00_Inbox/**",
-            "10_Memory/**",
-            "20_Projects/**",
-            "30_Knowledge/**",
-            "40_Decisions/**",
-            "50_Daily/**",
-            "80_Archive/**",
-        ],
-        "generated_views": ["MEMORY.md", "NOW.md", "GUARDRAILS.md", "INDEX.md", VERSION_FILE],
+        # A rule, not a folder list: every path except the System files above, the generated views and
+        # this manifest is user-owned, including folders from older PMO versions and the user's own folders.
+        "protected_paths": ["**"],
+        "protected_paths_exclude": ["owned_files", "generated_views", MANIFEST_FILE.as_posix()],
+        "generated_views": [*GENERATED_VIEWS, VERSION_FILE],
     }
     atomic_write_json(root / MANIFEST_FILE, manifest)
     return skipped
