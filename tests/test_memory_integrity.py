@@ -178,3 +178,16 @@ def test_bom_and_crlf_memory_from_cloud_writer_is_readable(vault):
     assert meta == original_meta
     assert body == original_body
     assert next(c for c in run_doctor(vault) if c.name == "memory_parse").ok
+
+
+def test_archived_replacement_retires_record_as_organize_skill_describes(vault):
+    old = write_memory_event(vault, memory(vault, "stale-loop"))
+    ingest_turn(vault, {"memory_events": [{
+        "type": "decision", "content": "Retired: stale-loop is done", "status": "archived",
+        "supersedes": ["stale-loop"],
+    }]})
+    rebuild_views(vault)
+    text = (vault / "MEMORY.md").read_text(encoding="utf-8")
+    assert "content-stale-loop" not in text
+    assert "Retired" not in text
+    assert old.exists()
