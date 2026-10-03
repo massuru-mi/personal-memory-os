@@ -12,9 +12,9 @@ language:
     tags: en
   preserve_source_language: true
 memory:
-  auto_save: true
+  auto_save: false
   importance_threshold: 0.60
-  auto_promote_explicit_decisions: true
+  auto_promote_explicit_decisions: false
   inferred_memory_min_confidence: 0.80
 corrections:
   auto_promote: true
@@ -22,9 +22,9 @@ corrections:
   repeat_error_escalation: true
   guardrail_repeat_threshold: 2
 daily:
-  enabled: true
+  enabled: false
   one_file_per_chat: true
-  update_on_every_meaningful_turn: true
+  update_on_every_meaningful_turn: false
   summary_generation: true
 views:
   now_window_days: 30

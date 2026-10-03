@@ -1,5 +1,5 @@
 # ChatGPT adapter guidance
 
-When Google Drive is connected, use `START_HERE.md` as the protocol entrypoint. Read the generated context views before answering context-sensitive requests. Perform the Memory Check every meaningful turn and update the chat's daily session file. New durable items should be written as separate memory-event files; user corrections should be separate correction files.
+The app instruction should stay minimal: each new chat reads `START_HERE.md` from the user's PMO and follows it.
 
-Do not modify `_system/**`. Avoid multiple assistants writing the same file; use provider/session-specific filenames.
+Use the available Google Drive connection for PMO reads/writes. Do not duplicate runtime policy in ChatGPT custom instructions. Do not modify `_system/**`. If `START_HERE.md` or a required file cannot be accessed, say so rather than pretending PMO context was loaded.

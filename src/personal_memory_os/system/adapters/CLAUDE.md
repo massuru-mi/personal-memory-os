@@ -1,3 +1,5 @@
 # Claude adapter guidance
 
-Use `START_HERE.md` as the common protocol. If Claude Code is operating on the local mirrored vault, the same write boundary applies. Keep provider/session-specific Daily files and append new canonical memory as separate files. Do not treat `CLAUDE.md` as the canonical PMO policy; PMO's canonical policy lives under `_system/protocols/`.
+The profile/project instruction should stay minimal: each new chat reads `START_HERE.md` from the user's PMO and follows it.
+
+Use the available Google Drive connection, or a user-selected local PMO folder when operating locally. Do not duplicate runtime policy in Claude instructions. Do not modify `_system/**`. If required PMO files cannot be accessed, report the limitation.
