@@ -24,6 +24,8 @@ ChatGPT で Google ドライブを接続し、ファイルの作成と読み書�
 https://github.com/massuru-mi/personal-memory-os/blob/main/skills/pmo-setup/SKILL.md を読み、その手順どおりに私の Google ドライブの「マイドライブ/PMO」に PMO をセットアップしてください。
 ```
 
+セットアップは複数ステップで進みます。途中で ChatGPT の返答が途切れたら、「続けて」と送ってください。作ったものを確かめて、続きから再開します（重複して作ることはありません）。
+
 保存先を変えたいときは、「マイドライブ/PMO」の部分を書き換えます。保存先を書かずに送った場合、ChatGPT は「マイドライブ/PMO」でよいかを確認してから作業を始めます。
 
 ChatGPT は手順書（[`skills/pmo-setup/SKILL.md`](skills/pmo-setup/SKILL.md)）に沿って、次のことを行います。
