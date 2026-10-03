@@ -10,7 +10,15 @@ import yaml
 from . import CONFIG_SCHEMA_VERSION, DATA_SCHEMA_VERSION, SYSTEM_SCHEMA_VERSION, __version__
 from .backup import create_backup
 from .config import deep_merge, dump_yaml, load_yaml
-from .constants import DATA_DIRECTORIES, MANIFEST_FILE, SETTINGS_FILE, SYSTEM_DIR, VERSION_FILE
+from .constants import (
+    CUSTOM_RULES_FILE,
+    DATA_DIRECTORIES,
+    MANIFEST_FILE,
+    ROOT_SYSTEM_FILES,
+    SETTINGS_FILE,
+    SYSTEM_DIR,
+    VERSION_FILE,
+)
 from .errors import DriftError
 from .io import atomic_write_json, atomic_write_text, sha256_file
 from .migrations import CONFIG_MIGRATIONS, DATA_MIGRATIONS, migrate
@@ -65,13 +73,26 @@ def detect_drift(root: Path) -> list[str]:
     return drift
 
 
-def _deploy_system(root: Path) -> dict[str, str]:
+def _deploy_root_files(root: Path, previously_owned: dict[str, str]) -> tuple[dict[str, str], list[str]]:
+    """Deploy vault-root System files without taking over files the user already had."""
     owned: dict[str, str] = {}
-    start = read_system_text("START_HERE.md")
-    atomic_write_text(root / "START_HERE.md", start)
-    owned["START_HERE.md"] = sha256_file(root / "START_HERE.md")
+    skipped: list[str] = []
+    for name, resource in ROOT_SYSTEM_FILES.items():
+        target = root / name
+        if target.exists() and name not in previously_owned:
+            skipped.append(name)
+            continue
+        atomic_write_text(target, read_system_text(resource))
+        owned[name] = sha256_file(target)
+    return owned, skipped
+
+
+def _deploy_system(root: Path) -> list[str]:
+    previously_owned = _load_manifest(root).get("owned_files", {})
+    owned, skipped = _deploy_root_files(root, previously_owned)
+    skip_resources = set(ROOT_SYSTEM_FILES.values()) | {"defaults/settings.yaml", "defaults/custom_rules.md"}
     for resource, rel in iter_system_files():
-        if rel in {"START_HERE.md", "defaults/settings.yaml"}:
+        if rel in skip_resources:
             continue
         destination = root / SYSTEM_DIR / rel
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -94,7 +115,7 @@ def _deploy_system(root: Path) -> dict[str, str]:
         "generated_views": ["MEMORY.md", "NOW.md", "GUARDRAILS.md", "INDEX.md", VERSION_FILE],
     }
     atomic_write_json(root / MANIFEST_FILE, manifest)
-    return owned
+    return skipped
 
 
 def _merge_settings(root: Path) -> None:
@@ -105,16 +126,25 @@ def _merge_settings(root: Path) -> None:
     atomic_write_text(path, dump_yaml(merged))
 
 
+def _ensure_custom_rules(root: Path) -> None:
+    path = root / CUSTOM_RULES_FILE
+    if not path.exists():
+        atomic_write_text(path, read_system_text("defaults/custom_rules.md"))
+
+
 def install(root: Path, *, deployed_commit: str | None = None) -> dict[str, Any]:
     root.mkdir(parents=True, exist_ok=True)
     for rel in DATA_DIRECTORIES:
         (root / rel).mkdir(parents=True, exist_ok=True)
     (root / "_config").mkdir(parents=True, exist_ok=True)
     _merge_settings(root)
-    _deploy_system(root)
+    _ensure_custom_rules(root)
+    skipped = _deploy_system(root)
     atomic_write_text(root / VERSION_FILE, _version_doc(installed_at=None, deployed_commit=deployed_commit))
     rebuild_views(root)
-    return read_version(root)
+    result = read_version(root)
+    result["skipped_existing"] = skipped
+    return result
 
 
 def update(
@@ -134,7 +164,8 @@ def update(
     migrate(root, int(previous.get("config_schema_version", 0)), CONFIG_SCHEMA_VERSION, CONFIG_MIGRATIONS)
     migrate(root, int(previous.get("data_schema_version", 0)), DATA_SCHEMA_VERSION, DATA_MIGRATIONS)
     _merge_settings(root)
-    _deploy_system(root)
+    _ensure_custom_rules(root)
+    skipped = _deploy_system(root)
     atomic_write_text(
         root / VERSION_FILE,
         _version_doc(installed_at=previous.get("installed_at"), deployed_commit=deployed_commit),
@@ -142,4 +173,5 @@ def update(
     rebuild_views(root)
     result = read_version(root)
     result["backup"] = str(backup_path) if backup_path else None
+    result["skipped_existing"] = skipped
     return result
