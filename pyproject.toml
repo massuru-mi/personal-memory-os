@@ -19,7 +19,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.3", "ruff>=0.7"]
+mcp = ["mcp>=2.3,<3"]
+dev = ["pytest>=8.3", "ruff>=0.7", "mcp>=2.3,<3"]
 
 [project.scripts]
 pmo = "personal_memory_os.cli:main"
