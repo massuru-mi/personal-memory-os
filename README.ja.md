@@ -97,7 +97,7 @@ ChatGPTで保存した記憶をClaudeも利用できる。将来別のAIへ乗�
 | 記憶・訂正のMarkdown保存 | CLIと共通schemaを実装 |
 | 訂正・置き換えの反映 | `supersedes`を解決し、古い項目を現在のビューから除外 |
 | 推測と明示情報の区別 | MEMORY／NOWで設定された確信度を使い、採用した推測にラベルを表示 |
-| MEMORY／NOW／GUARDRAILS／INDEX | CLIで再生成可能 |
+| MEMORY／NOW／GUARDRAILS／INDEX | CLIで再生成可能。raw Markdownを書き込めるクラウドAIは`skills/pmo-refresh-views/SKILL.md`に従って再生成可能 |
 | 会話ログ・日次要約 | ターン取り込みと、指定日の要約生成を実装 |
 | ローカル検索・重複検出・バックアップ | CLIで実行可能 |
 | System更新・Migration | 配置・変更検出・バックアップ・schema移行の基盤を実装。下記の既知課題あり |
@@ -188,7 +188,7 @@ ruff check .
 
 - [アーキテクチャ](docs/architecture.md) / [ストレージ契約](docs/storage-contract.md)
 - [AI連携](docs/ai-integration.md) / [記憶プロトコル](docs/memory-protocol.md)
-- [AIセットアップSKILL](skills/pmo-setup/SKILL.md) / [クラウド運用](docs/local-optional-design.ja.md) / [最小指示文](docs/custom-instructions.ja.md)
+- [AIセットアップSKILL](skills/pmo-setup/SKILL.md) / [View再生成SKILL](skills/pmo-refresh-views/SKILL.md) / [クラウド運用](docs/local-optional-design.ja.md) / [最小指示文](docs/custom-instructions.ja.md)
 - [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md)
 
 ## ライセンス
