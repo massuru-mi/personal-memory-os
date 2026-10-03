@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from datetime import datetime
@@ -8,7 +9,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .config import load_settings
 from .errors import ValidationError
-from .frontmatter import dumps, load_file
+from .frontmatter import dumps, load_file, loads
 from .io import atomic_write_text, file_lock
 from .models import CorrectionEvent, MemoryEvent
 from .paths import VaultPaths
@@ -114,3 +115,58 @@ def read_events(
             raise ValidationError(f"{path}: {exc}") from exc
         rows.append((meta, body.strip(), path))
     return rows
+
+
+_SCOPE_LINE = re.compile(r"^scope:")
+_LIST_ITEM = re.compile(r"^\s*-\s")
+
+
+def set_scope(vault_root: Path, record_ids: list[str], scope: list[str]) -> list[Path]:
+    """Set the scope of existing memory events or corrections in place.
+
+    Scope is classification metadata, so changing it does not need a superseding record. Only the
+    ``scope`` line of the frontmatter is replaced; the body and every other line stay unchanged. All IDs are resolved and validated before any file is written.
+    """
+    from .scopes import validate_scope
+    from .validation import CORRECTION_SCHEMA
+
+    validate_scope(scope)
+    paths = VaultPaths(vault_root)
+    by_id: dict[str, tuple[Path, str]] = {}
+    for directory, schema in ((paths.events, MEMORY_SCHEMA), (paths.corrections, CORRECTION_SCHEMA)):
+        for meta, _, path in read_events(directory, schema):
+            by_id[meta["id"]] = (path, schema)
+    missing = [i for i in record_ids if i not in by_id]
+    if missing:
+        raise ValidationError(f"unknown record IDs: {', '.join(missing)}")
+    scope_line = "scope: " + json.dumps(scope, ensure_ascii=False)
+    updates: list[tuple[Path, str]] = []
+    for record_id in dict.fromkeys(record_ids):
+        path, schema = by_id[record_id]
+        # BOM/CRLF from cloud writers are normalized; that is content-preserving.
+        text = path.read_text(encoding="utf-8").removeprefix("\ufeff").replace("\r\n", "\n")
+        updated = _replace_scope_line(text, scope_line)
+        meta, body = loads(updated)
+        validate_document(meta, body, schema)
+        updates.append((path, updated))
+    with file_lock(paths.runtime_root() / "locks" / "scope.lock"):
+        for path, updated in updates:
+            atomic_write_text(path, updated)
+    return [path for path, _ in updates]
+
+
+def _replace_scope_line(text: str, scope_line: str) -> str:
+    lines = text.split("\n")
+    end = lines.index("---", 1)
+    front = lines[1:end]
+    kept: list[str] = []
+    skipping = False
+    for line in front:
+        if _SCOPE_LINE.match(line):
+            skipping = True
+            continue
+        if skipping and _LIST_ITEM.match(line):
+            continue
+        skipping = False
+        kept.append(line)
+    return "\n".join(["---", *kept, scope_line, *lines[end:]])

@@ -55,6 +55,8 @@ Every memory event and correction may carry `scope`, a list saying where it appl
 
 Categories are not predefined. They are whatever paths the user's records use: reuse an existing category when one fits (see the Categories section of `INDEX.md`), create a new path when none fits, and prefer the broader parent when unsure. Category names may be in any language; keep them short and consistent. Narrow, rarely relevant items belong in a category, not in global, so they are not loaded in every conversation.
 
+Scope is classification metadata, not part of what a record says. To classify a record or move it to another category (including splitting, merging or renaming categories), change its scope in place with `pmo set-scope` or the MCP tool `pmo_set_scope`; they replace only the `scope` line. Do not supersede a record just to change its scope, and never change the body or other fields this way — to change what a record says, append a superseding record.
+
 Use `supersedes` when the user explicitly changes a prior fact, preference or decision. Preserve history rather than deleting the old event.
 
 `memory.inferred_memory_min_confidence` controls whether intentionally created inferred records appear in generated views; it is not permission to auto-create inferred memory.
