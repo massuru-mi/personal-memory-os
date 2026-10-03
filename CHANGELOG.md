@@ -5,6 +5,7 @@
 - add canonical file-format rules to `START_HERE.md`: start from `_system/templates/`, UTF-8 without BOM, LF line endings, read back before reporting saved
 - clarify in the Correction Protocol that `Wrong assumption` / `Correct understanding` are required body sections, not frontmatter fields
 - point the Memory and Daily protocols at their templates
+- `pmo ingest-turn` now writes a Daily session file only when `daily.enabled: true`, and returns `"session": null` otherwise
 
 ## 1.1.0 - 2026-10-03
 
