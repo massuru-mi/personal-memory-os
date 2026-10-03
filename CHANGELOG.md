@@ -6,6 +6,14 @@
 - clarify in the Correction Protocol that `Wrong assumption` / `Correct understanding` are required body sections, not frontmatter fields
 - point the Memory and Daily protocols at their templates
 - `pmo ingest-turn` now writes a Daily session file only when `daily.enabled: true`, and returns `"session": null` otherwise
+- deploy `AGENTS.md` and `CLAUDE.md` (imports `AGENTS.md`) into the vault root as thin agent entrypoints; never overwrite pre-existing user files (`skipped_existing`)
+- create user-owned `_config/custom_rules.md` on install; `START_HERE.md` reads it
+- add optional `## Trigger` section to corrections (`pmo correct --trigger`, `ingest-turn` `trigger`), shown in GUARDRAILS
+- stop creating unused `10_Memory/Self`, `10_Memory/Preferences` and `10_Memory/Decisions`; existing folders are left in place
+- add skills `pmo-remember`, `pmo-doctor-repair`, `pmo-update` and `pmo-organize`, deployed under `_system/skills/` and referenced from `START_HERE.md`
+- add design memo `docs/agent-integration-proposals.ja.md`
+- add `pmo mcp`: PMO operations as an MCP server with short session instructions; optional extra `personal-memory-os[mcp]`
+- rewrite `README.ja.md` in plainer Japanese; add the one-line ChatGPT setup prompt to both READMEs and mark ChatGPT setup as confirmed
 
 ## 1.1.0 - 2026-10-03
 
