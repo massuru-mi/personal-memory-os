@@ -20,6 +20,6 @@ If `daily.update_on_every_meaningful_turn` is enabled, keep the session file con
 - Corrections
 - Open loops
 
-Do not paste the full conversation transcript by default. Raw transcript archiving is separately controlled by Config.
+Do not paste the full conversation transcript. Raw transcripts are a separate layer under `60_Transcripts/`, written by local tooling only when `privacy.raw_chat_archiving` is `true`.
 
 `SUMMARY.md` is derived from session files and may be rebuilt. PMO does not create scheduled/background Daily updates by itself.

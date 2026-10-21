@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- add the raw transcript archive `60_Transcripts/`, written only when `privacy.raw_chat_archiving: true`: `pmo transcripts import|sync` converts Claude Code session logs into one Markdown file per session with only the user's and the assistant's words (tool calls become one-line markers; tool output, thinking, harness-injected text and subagent logs are dropped; API keys and similar secrets are redacted)
+- add `pmo transcripts hook` for Claude Code `SessionStart` / `Stop` / `SessionEnd` hooks; it never fails the session, and at session start it tells the assistant the session ID to use as `source_session`
+- search leaves transcripts out unless asked (`pmo search --include-transcripts`, `pmo_search(include_transcripts=true)`); the local index file is renamed so old indexes are rebuilt
+- add optional `source_session` to memories (`pmo record --source-session`, `pmo_record_memory(source_session=...)`) to point at the conversation a memory came from
+- `pmo_bootstrap` reports whether transcripts are archived and where
 - add canonical file-format rules to `START_HERE.md`: start from `_system/templates/`, UTF-8 without BOM, LF line endings, read back before reporting saved
 - clarify in the Correction Protocol that `Wrong assumption` / `Correct understanding` are required body sections, not frontmatter fields
 - point the Memory and Daily protocols at their templates
