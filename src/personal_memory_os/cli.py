@@ -15,6 +15,7 @@ from .events import new_event_id, now_for_vault, set_scope, write_correction, wr
 from .ingest import ingest_turn
 from .models import CorrectionEvent, MemoryEvent
 from .runtime_index import rebuild_index, search
+from .transcripts import handle_claude_code_hook, import_claude_code, sync_claude_code
 from .views import rebuild_views
 
 
@@ -56,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--confidence", type=float, default=1.0)
     p.add_argument("--explicitness", choices=["explicit", "inferred"], default="explicit")
     p.add_argument("--scope", action="append", default=[], help="\"global\" or a category path such as digital/video-editing; repeatable (default: global)")
+    p.add_argument("--source-session", help="<source>:<session id> of the conversation the memory came from")
 
     p = sub.add_parser("correct", help="Append a high-priority user correction")
     p.add_argument("vault")
@@ -84,6 +86,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("vault")
     p.add_argument("query")
     p.add_argument("--limit", type=int, default=20)
+    p.add_argument("--include-transcripts", action="store_true", help="Also search raw transcripts (60_Transcripts/)")
+
+    p = sub.add_parser(
+        "transcripts",
+        help="Archive raw conversation text into 60_Transcripts/ (requires privacy.raw_chat_archiving: true)",
+    )
+    tsub = p.add_subparsers(dest="transcripts_command", required=True)
+    t = tsub.add_parser("import", help="Import Claude Code session logs (.jsonl)")
+    t.add_argument("vault")
+    t.add_argument("logs", nargs="+")
+    t.add_argument("--force", action="store_true", help="Rewrite even if the log is unchanged")
+    t = tsub.add_parser("sync", help="Import every Claude Code session log under the projects folder")
+    t.add_argument("vault")
+    t.add_argument("--projects", help="Claude Code projects folder (default: ~/.claude/projects)")
+    t.add_argument("--force", action="store_true", help="Rewrite even if logs are unchanged")
+    t = tsub.add_parser("hook", help="Claude Code hook: reads the hook JSON on stdin; never fails the session")
+    t.add_argument("vault")
 
     p = sub.add_parser("backup", help="Create a zip backup of the private vault")
     p.add_argument("vault")
@@ -143,6 +162,7 @@ def run(args: argparse.Namespace) -> object:
             confidence=args.confidence,
             explicitness=args.explicitness,
             scope=args.scope,
+            metadata={"source_session": args.source_session} if args.source_session else {},
         )
         path = write_memory_event(root, event)
         rebuild_views(root)
@@ -171,7 +191,14 @@ def run(args: argparse.Namespace) -> object:
         path = render_day_summary(_root(args.vault), date.fromisoformat(args.day))
         return {"path": str(path) if path else None}
     if cmd == "search":
-        return search(_root(args.vault), args.query, args.limit)
+        return search(_root(args.vault), args.query, args.limit, include_transcripts=args.include_transcripts)
+    if cmd == "transcripts":
+        root = _root(args.vault)
+        if args.transcripts_command == "import":
+            return [import_claude_code(root, Path(log), force=args.force) for log in args.logs]
+        projects = Path(args.projects).expanduser() if args.projects else None
+        result = sync_claude_code(root, projects, force=args.force)
+        return {"counts": result["counts"]}
     if cmd == "backup":
         out = Path(args.output).expanduser().resolve() if args.output else None
         return {"path": str(create_backup(_root(args.vault), out))}
@@ -193,6 +220,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "mcp":
         return _serve_mcp(args.vault, args.max_context_chars)
+    if args.command == "transcripts" and args.transcripts_command == "hook":
+        return _claude_code_hook(args.vault)
     try:
         result = run(args)
         _emit(result, args.json)
@@ -203,6 +232,18 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def _claude_code_hook(vault: str) -> int:
+    # A hook must not break or block the Claude Code session: report problems on stderr, exit 0.
+    try:
+        payload = json.loads(sys.stdin.read() or "{}")
+        context = handle_claude_code_hook(_root(vault), payload if isinstance(payload, dict) else {})
+        if context:
+            print(context)
+    except Exception as exc:  # noqa: BLE001 - hook boundary
+        print(f"pmo transcripts hook: {exc}", file=sys.stderr)
+    return 0
 
 
 def _serve_mcp(vault: str | None, max_context_chars: int) -> int:

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .config import load_settings
-from .constants import VERSION_FILE
+from .constants import TRANSCRIPTS_DIR, VERSION_FILE
 from .deploy import read_version
 from .doctor import doctor_dict
 from .events import (
@@ -117,6 +117,11 @@ class PMOTools:
                 "memory": settings.get("memory", {}),
                 "daily": settings.get("daily", {}),
                 "language": settings.get("language", {}),
+                "transcripts": {
+                    "raw_chat_archiving": (settings.get("privacy") or {}).get("raw_chat_archiving") is True,
+                    "folder": f"{TRANSCRIPTS_DIR}/",
+                    "search": "pmo_search with include_transcripts=true; read with pmo_read_file",
+                },
             },
             "custom_rules": rules_path.read_text(encoding="utf-8") if rules_path.is_file() else "",
             "rules": "Full rules: START_HERE.md and _system/protocols/ in the vault (read with pmo_read_file).",
@@ -157,12 +162,13 @@ class PMOTools:
             result["more"] = "Some lower-priority items were omitted. Use pmo_search to find them."
         return result
 
-    def search(self, query: str, limit: int = 10) -> dict[str, Any]:
+    def search(self, query: str, limit: int = 10, include_transcripts: bool = False) -> dict[str, Any]:
         vault = self._require_vault()
-        if not self._index_fresh:
+        # Transcripts are rewritten by hooks outside this process, so a transcript search re-indexes.
+        if not self._index_fresh or include_transcripts:
             rebuild_index(vault)
             self._index_fresh = True
-        return {"results": search(vault, query, limit=limit)}
+        return {"results": search(vault, query, limit=limit, include_transcripts=include_transcripts)}
 
     def read_file(self, path: str) -> dict[str, Any]:
         vault = self._require_vault()
@@ -191,15 +197,17 @@ class PMOTools:
         status: str = "active",
         source: str = "mcp",
         scope: list[str] | None = None,
+        source_session: str | None = None,
     ) -> dict[str, Any]:
         vault = self._require_vault()
         supersedes = supersedes or []
         self._check_known_ids(VaultPaths(vault).events, supersedes)
+        metadata = {"source_session": source_session} if source_session else {}
         at = now_for_vault(vault)
         event = MemoryEvent(
             id=new_event_id("mem", at), type=type, content=content, created_at=at, source=source,
             importance=importance, status=status, topic=topic, confidence=confidence,
-            explicitness=explicitness, supersedes=supersedes, scope=scope or [],
+            explicitness=explicitness, supersedes=supersedes, scope=scope or [], metadata=metadata,
         )
         path = write_memory_event(vault, event)
         return self._after_write(vault, event.id, path)
@@ -358,9 +366,11 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
         return tools.category_context(categories, max_chars)
 
     @server.tool(annotations=read_only)
-    def pmo_search(query: str, limit: int = 10) -> dict[str, Any]:
-        """Full-text search over the user's PMO records. Returns vault-relative paths and snippets."""
-        return tools.search(query, limit)
+    def pmo_search(query: str, limit: int = 10, include_transcripts: bool = False) -> dict[str, Any]:
+        """Full-text search over the user's PMO records. Returns vault-relative paths and snippets.
+        Raw conversation transcripts (60_Transcripts/) are searched only with include_transcripts=true;
+        use it to check what was actually said, e.g. the source_session of a memory."""
+        return tools.search(query, limit, include_transcripts)
 
     @server.tool(annotations=read_only)
     def pmo_read_file(path: str) -> dict[str, Any]:
@@ -380,15 +390,19 @@ def build_server(vault: Path | None, max_context_chars: int = DEFAULT_MAX_CONTEX
         status: Literal["active", "archived"] = "active",
         source: str = "mcp",
         scope: list[str] | None = None,
+        source_session: str | None = None,
     ) -> dict[str, Any]:
         """Append one memory event. Use only for what the user asked to save or the memory policy allows.
         Preferences and working style use type=preference. To change a recorded item, pass the old IDs in
         supersedes; to retire one, also set status=archived. Mark AI inferences explicitness=inferred with an
         honest confidence. Set source to the assistant name (e.g. claude-code, codex). scope: ["global"] only
         for things that matter in every conversation; otherwise the best matching category path from
-        pmo_bootstrap (or a new one such as "digital/video-editing"); several are allowed."""
+        pmo_bootstrap (or a new one such as "digital/video-editing"); several are allowed.
+        source_session: "<source>:<session id>" of the conversation the memory came from, when known
+        (e.g. claude-code:<id> as given at session start), so its raw transcript can be found."""
         return tools.record_memory(
             type, content, topic, importance, explicitness, confidence, supersedes, status, source, scope,
+            source_session,
         )
 
     @server.tool(annotations=append_only)

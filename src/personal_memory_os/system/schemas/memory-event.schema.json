@@ -89,6 +89,11 @@
         "minLength": 1
       },
       "description": "\"global\" or category paths such as \"digital/video-editing\". Missing means global."
+    },
+    "source_session": {
+      "type": "string",
+      "minLength": 1,
+      "description": "<source>:<session id> of the conversation the memory came from, e.g. claude-code:<id>. Its raw transcript, when archived, is 60_Transcripts/<date>/<source>_<session id>.md."
     }
   },
   "additionalProperties": true
