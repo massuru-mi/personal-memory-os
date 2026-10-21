@@ -142,7 +142,7 @@ def test_duplicate_external_ids_fail_closed(vault):
 
 def test_model_rejects_naive_datetime_and_metadata_overrides(vault):
     event = memory(vault, "naive")
-    event.created_at = datetime(2026, 10, 2)  # noqa: DTZ001 - deliberately invalid input
+    event.created_at = datetime.fromisoformat("2026-10-02T00:00:00")  # deliberately naive: invalid input
     with pytest.raises(ValidationError, match="timezone"):
         write_memory_event(vault, event)
     with pytest.raises(ValidationError, match="override"):
