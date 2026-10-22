@@ -29,7 +29,7 @@ Results the author verified on real devices (as of 2026-10-03).
 - **Read/write**: can read PMO in Drive and add memories to it
 - **MCP**: can use PMO tools from a session in any folder by registering `pmo mcp` ([details](#use-from-any-folder-mcp))
 
-The free plan of ChatGPT could not connect Google Drive (as of 2026-10-22).
+Note: connecting Google Drive in ChatGPT requires a paid plan (as of 2026-10-22).
 
 On a computer, Claude Code or Codex is recommended because they support MCP. Gemini and other assistants not listed have not been verified.
 
