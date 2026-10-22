@@ -191,3 +191,24 @@ def test_now_items_are_cut_shorter_than_memory_items(vault: Path):
     assert "n" * 149 + "…" in now_line and "n" * 150 not in now_line
     assert loop["path"] in now_line
     assert "k" * 399 + "…" in memory_line
+
+
+def test_transcript_search_sees_files_written_outside_the_server(vault: Path):
+    tools = PMOTools(vault)
+    assert tools.search("okapi")["results"] == []
+    folder = vault / "60_Transcripts" / "2026-10-21"
+    folder.mkdir(parents=True)
+    (folder / "claude-code_abc.md").write_text("okapi said in a chat", encoding="utf-8")
+
+    assert tools.search("okapi")["results"] == []
+    rows = tools.search("okapi", include_transcripts=True)["results"]
+    assert [r["path"] for r in rows] == ["60_Transcripts/2026-10-21/claude-code_abc.md"]
+    assert tools.read_file("60_Transcripts/2026-10-21/claude-code_abc.md")["content"].startswith("okapi")
+
+
+def test_record_memory_links_source_session(vault: Path):
+    tools = PMOTools(vault)
+    result = tools.record_memory("fact", "linked", source_session="claude-code:abc")
+    text = (vault / result["path"]).read_text(encoding="utf-8")
+    assert "source_session: claude-code:abc" in text
+    assert tools.bootstrap()["policy"]["transcripts"]["raw_chat_archiving"] is False

@@ -8,11 +8,11 @@ MCP を接続したセッションでは、AI は PMO を前提に動きます�
 
 | ツール | 内容 | 書き込み |
 |---|---|---|
-| `pmo_bootstrap` | **global** の訂正（全部）、今のこと（NOW）、global の大事な記憶、保存方針、`custom_rules.md`、**分野の一覧**を、文字数の上限内でまとめて返す。記録が一覧より新しければ、先に一覧を作り直す | 一覧のみ |
+| `pmo_bootstrap` | **global** の訂正（全部）、今のこと（NOW）、global の大事な記憶、保存方針、`custom_rules.md`、**分野の一覧**を、文字数の上限内でまとめて返す。会話の原文を残しているかと、その置き場所（`60_Transcripts/`）も返す。記録が一覧より新しければ、先に一覧を作り直す | 一覧のみ |
 | `pmo_category_context` | 指定した分野（複数可）の訂正（全部）と大事な記憶を返す。親の分野の記録も含む | なし |
-| `pmo_search` | 記録を全文検索する | なし |
+| `pmo_search` | 記録を全文検索する。会話の原文（`60_Transcripts/`）は `include_transcripts=true` のときだけ対象にする | なし |
 | `pmo_read_file` | Vault 内の `.md`／`.yaml` を 1 つ読む（Vault の外は読めない） | なし |
-| `pmo_record_memory` | 記憶を 1 件追記する。`scope` で分野を指定。`supersedes` で置き換え、`status: archived` で引退 | 追記 |
+| `pmo_record_memory` | 記憶を 1 件追記する。`scope` で分野を指定。`supersedes` で置き換え、`status: archived` で引退。`source_session` で元の会話（例：`claude-code:<会話ID>`）を指せる | 追記 |
 | `pmo_record_correction` | 訂正を 1 件追記する。`scope`、`trigger` も指定できる | 追記 |
 | `pmo_set_scope` | 既存の記録の分野（scope）だけを、その場で書き換える。本文や他の項目は変えない | scope の行のみ |
 | `pmo_rebuild` | 一覧と検索用データを作り直す | 一覧のみ |

@@ -6,6 +6,8 @@ SYSTEM_DIR = "_system"
 CONFIG_DIR = "_config"
 MEMORY_DIR = "10_Memory"
 DAILY_DIR = "50_Daily"
+# Optional raw conversation archive (privacy.raw_chat_archiving); created on first write.
+TRANSCRIPTS_DIR = "60_Transcripts"
 ARCHIVE_DIR = "80_Archive"
 
 DATA_DIRECTORIES = (
