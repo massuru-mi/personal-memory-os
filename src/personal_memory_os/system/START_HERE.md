@@ -42,6 +42,13 @@ Daily/session logging is optional.
 - If enabled, follow the Daily Protocol and keep one provider/session-specific file per chat.
 - PMO does not perform background or scheduled work by itself.
 
+## Raw transcripts
+
+When `privacy.raw_chat_archiving` is `true`, `60_Transcripts/<date>/<source>_<session-id>.md` holds the raw text of past conversations (the user's and the assistant's words; tool output and secrets are left out). They are written by local tooling such as `pmo transcripts`, not by hand.
+
+- Transcripts are not canonical memory and are not loaded at bootstrap. Read or search them (`pmo_search` with `include_transcripts`) when you need what was actually said, for example the conversation a memory's `source_session` points to.
+- Do not create, edit or delete transcript files during ordinary operation.
+
 ## Generated views
 
 `MEMORY.md`, `NOW.md`, `GUARDRAILS.md`, and `INDEX.md` are generated views. Never make a semantic change only in a generated view.
@@ -68,7 +75,7 @@ Malformed files cannot be parsed and are not reflected in generated views. When 
 
 - `_system/**`: read-only to ordinary AI operation. Updated only by PMO deployment/update.
 - `_config/**`: user-owned. Write only when the user explicitly asks to change PMO configuration.
-- Data directories (`10_Memory`, `50_Daily`, `80_Archive`): read/write only according to protocol and config. Projects, knowledge and decisions are memory events distinguished by `type` and `scope`, not separate folders. Any other folder in the vault is the user's own and is not read or written by PMO unless the user asks.
+- Data directories (`10_Memory`, `50_Daily`, `60_Transcripts`, `80_Archive`): read/write only according to protocol and config. Projects, knowledge and decisions are memory events distinguished by `type` and `scope`, not separate folders. Any other folder in the vault is the user's own and is not read or written by PMO unless the user asks.
 - Generated root views: derived, never canonical.
 
 Read `_system/protocols/` for normative details. If required Drive operations are unavailable, state what could and could not be completed; never claim an unread file was read or an unwritten record was saved.
