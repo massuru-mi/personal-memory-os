@@ -7,7 +7,7 @@
 - search leaves transcripts out unless asked (`pmo search --include-transcripts`, `pmo_search(include_transcripts=true)`); the local index file is renamed so old indexes are rebuilt
 - add optional `source_session` to memories (`pmo record --source-session`, `pmo_record_memory(source_session=...)`) to point at the conversation a memory came from
 - `pmo_bootstrap` reports whether transcripts are archived and where
-- note in both READMEs that the free ChatGPT plan could not connect Google Drive (as of 2026-10-22)
+- note in both READMEs that connecting Google Drive in ChatGPT requires a paid plan (as of 2026-10-22)
 - document the transcript archive in the MCP guide (`docs/mcp.ja.md`), the storage contract and the vault layout in `docs/local-optional-design.ja.md`
 - add canonical file-format rules to `START_HERE.md`: start from `_system/templates/`, UTF-8 without BOM, LF line endings, read back before reporting saved
 - clarify in the Correction Protocol that `Wrong assumption` / `Correct understanding` are required body sections, not frontmatter fields
