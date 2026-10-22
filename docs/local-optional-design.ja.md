@@ -45,6 +45,7 @@ PMO/
 ├─ _config/
 ├─ 10_Memory/
 ├─ 50_Daily/
+├─ 60_Transcripts/   # 会話の原文（有効にした場合）
 └─ 80_Archive/
 ```
 
