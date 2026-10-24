@@ -1,6 +1,6 @@
 """Personal Memory OS."""
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 SYSTEM_SCHEMA_VERSION = 1
 CONFIG_SCHEMA_VERSION = 1
 DATA_SCHEMA_VERSION = 1

@@ -6,7 +6,7 @@ PMO intentionally avoids making one model vendor the orchestrator.
 
 When a provider can access the user's private cloud folder, the runtime entrypoint is `START_HERE.md`. Detailed memory, correction, Daily and write-boundary rules live there and under `_system/protocols/`; app custom instructions should remain a thin bootstrap pointer.
 
-Each new chat/session reads `START_HERE.md` once before relying on PMO context. If the connector cannot read it, the assistant must not pretend PMO context was loaded.
+Each new chat/session reads `START_HERE.md` once before the first reply, even when the question looks general. If the connector cannot read it, the assistant must not pretend PMO context was loaded.
 
 ## App-based setup
 
