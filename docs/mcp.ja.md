@@ -20,12 +20,15 @@ MCP を接続したセッションでは、AI は PMO を前提に動きます�
 
 接続すると、サーバの指示文（instructions）が AI に渡ります。中身は次のとおりです。
 
-- 最初に `pmo_bootstrap` を呼ぶ
+- 最初の回答の前に、一般的な質問に見えても必ず、`pmo_read_file` で `START_HERE.md` を読み、`pmo_bootstrap` を呼ぶ（個人の情報が関係するかは、読む前には判断できないため）
+- global の訂正は常に守る。分野に入ったら `pmo_category_context` を呼ぶ
 - 訂正を最優先する
 - 保存は頼まれたものか、保存方針が許すものだけにする
 - ファイルを手で書かず、ツールで記録する
 
-細かいルールは、Vault の `START_HERE.md` と Protocol が正本です。
+細かいルールは、Vault の `START_HERE.md` と Protocol が正本です。指示文には必ず守ることだけを書き、残りは `START_HERE.md` を読ませます。Claude Code は 2,048 文字を超える指示文を切り捨てる（環境変数 `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` で変更可）ため、指示文はこの長さに収めています。
+
+`START_HERE.md` では、設定・`custom_rules.md`・global の訂正は常に読み、記憶（MEMORY、NOW など）は個人の情報が回答に影響しうるときに読みます。生活、お金、家族、健康、仕事、買い物など、本人の事情で答えが変わる質問は、一般的に見えても対象です。迷ったら読みます。
 
 Vault が見つからない場合（Google ドライブのアプリが止まっているときなど）でも、サーバは起動します。そのときは `pmo_bootstrap` が `available: false` を返し、ほかの作業の邪魔はしません。
 

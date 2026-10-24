@@ -4,17 +4,22 @@ This PMO folder is the user's portable, AI-independent memory layer. Canonical M
 
 ## Session bootstrap
 
-At the beginning of each new chat/session, read this file before relying on PMO context. You do not need to re-read it on every turn unless the PMO rules may have changed.
+At the beginning of each new chat/session, read this file before your first reply, even when the question looks general. You do not need to re-read it on every turn unless the PMO rules may have changed.
 
-Then read, in this order when personal context may affect the answer:
+Always read these before your first reply too. They are short and apply to every conversation:
 
 1. `_config/settings.yaml` — current user-controlled PMO behavior.
    Also read `_config/custom_rules.md` when present — additional user-owned rules.
 2. `GUARDRAILS.md` — active user corrections and hard constraints. Always apply the **Global** section. Apply a category section when the conversation is in that category or one of its sub-categories; several categories can apply at once.
+
+Read the rest, in this order, when personal context may affect the answer:
+
 3. `MEMORY.md` — durable memory view. Items labelled with `{category}` matter only in that category.
 4. `NOW.md` — recent focus, progress and open loops.
 5. `INDEX.md` — navigation, including the user's categories.
 6. Relevant canonical records and project/knowledge files when needed.
+
+Personal context may affect the answer whenever the right answer depends on the user's own situation: daily life, money, family, health, work, purchases, plans or anything the user will act on. This includes questions that look general (for example "should I keep these receipts?" depends on the user's family, loans and tax situation). When unsure, read.
 
 Generated views are convenient context, not canonical data. When freshness or a conflict matters, inspect the relevant canonical records and latest corrections.
 

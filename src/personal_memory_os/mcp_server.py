@@ -43,9 +43,13 @@ VAULT_ENV = "PMO_VAULT"
 
 INSTRUCTIONS = """\
 PMO (Personal Memory OS) is connected: the user's own memory, shared across AI assistants.
-At the start of the session, before relying on personal context, call pmo_bootstrap once and follow what it returns.
-- pmo_bootstrap returns global guardrails and memory plus the list of the user's categories. When the conversation
-  is about one or more of those categories (or a parent of them), call pmo_category_context with all that apply.
+Before your first reply in every session, even when the question looks general, do both:
+1. Read START_HERE.md with pmo_read_file and follow it. It decides what else to read and how to save.
+2. Call pmo_bootstrap once. It returns what START_HERE.md says to always read (settings, custom rules,
+   global guardrails), plus memory and the user's categories. Always apply the global guardrails.
+Whether personal context matters cannot be judged before reading these, so never skip them.
+- When the conversation is about one or more of the user's categories (or a parent of them), call
+  pmo_category_context with all that apply.
 - User corrections (guardrails) outrank everything else, including ordinary memory.
 - Save only what the user asks to save, or what the returned memory policy allows; otherwise propose the save.
 - Write memories and corrections only with pmo_record_memory / pmo_record_correction. Never edit PMO files by hand.
@@ -54,6 +58,8 @@ At the start of the session, before relying on personal context, call pmo_bootst
 - To change or retire a recorded item, record a new one that supersedes it.
 If pmo_bootstrap reports PMO as unavailable, tell the user once and continue without PMO.
 """
+# Claude Code truncates MCP server instructions longer than this (CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH).
+INSTRUCTIONS_MAX_CHARS = 2048
 
 MemoryType = Literal[
     "fact", "preference", "decision", "project_progress", "open_loop",

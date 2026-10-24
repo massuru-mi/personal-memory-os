@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2026-10-24
+
+- the MCP instructions now require, before the first reply of every session and even for questions that look general, reading `START_HERE.md` with `pmo_read_file` and calling `pmo_bootstrap`; they no longer say "before relying on personal context", which let assistants skip PMO for seemingly general questions
+- keep the MCP instructions within 2,048 characters, the length Claude Code keeps by default, and test it
+- `START_HERE.md`: read it before the first reply; always read settings, `custom_rules.md` and the Global guardrails; read MEMORY, NOW, INDEX and records when personal context may affect the answer, with a concrete rule for when it does (the answer depends on the user's own situation, even if the question looks general; when unsure, read)
+- update `docs/mcp.ja.md` and `docs/ai-integration.md` to match
+
 ## 1.2.0 - 2026-10-22
 
 - add the raw transcript archive `60_Transcripts/`, written only when `privacy.raw_chat_archiving: true`: `pmo transcripts import|sync` converts Claude Code session logs into one Markdown file per session with only the user's and the assistant's words (tool calls become one-line markers; tool output, thinking, harness-injected text and subagent logs are dropped; API keys and similar secrets are redacted)

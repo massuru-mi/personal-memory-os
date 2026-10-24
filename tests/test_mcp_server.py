@@ -6,7 +6,7 @@ import pytest
 
 from personal_memory_os.deploy import install
 from personal_memory_os.errors import ValidationError
-from personal_memory_os.mcp_server import INSTRUCTIONS, PMOTools
+from personal_memory_os.mcp_server import INSTRUCTIONS, INSTRUCTIONS_MAX_CHARS, PMOTools
 
 
 @pytest.fixture
@@ -90,6 +90,14 @@ def test_read_file_stays_inside_vault(vault: Path, tmp_path: Path):
 
 def test_doctor_reports_ok(vault: Path):
     assert PMOTools(vault).doctor()["ok"] is True
+
+
+def test_instructions_require_start_here_before_first_reply_and_fit_claude_code():
+    assert len(INSTRUCTIONS) <= INSTRUCTIONS_MAX_CHARS
+    assert "Before your first reply in every session" in INSTRUCTIONS
+    assert "START_HERE.md" in INSTRUCTIONS and "pmo_bootstrap" in INSTRUCTIONS
+    assert "never skip" in INSTRUCTIONS
+    assert "before relying on personal context" not in INSTRUCTIONS
 
 
 def test_mcp_server_exposes_tools_and_instructions(vault: Path):
