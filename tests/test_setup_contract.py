@@ -18,6 +18,9 @@ def test_safe_initial_memory_policy():
 def test_runtime_policy_is_in_start_here():
     start = read_system_text("START_HERE.md")
     assert "beginning of each new chat/session" in start
+    assert "before your first reply, even when the question looks general" in start
+    assert "Always read these before your first reply" in start
+    assert "When unsure, read." in start
     assert "memory.auto_save" in start
     assert "daily.enabled" in start
     assert "Generated views" in start
