@@ -220,7 +220,7 @@ pmo doctor /path/to/PMO
 
 `_config/settings.yaml` で `privacy.raw_chat_archiving: true` にすると、Claude Code と Codex の会話の原文を `60_Transcripts/日付/<claude-code か codex>_<会話ID>.md` に残せます。残すのは自分の入力と AI の返答の文だけです。ツールの操作は 1 行の目印にし、ツールの結果、AI の思考の過程、アプリが自動で添える文、サブエージェントの記録は入れません。API キー、トークン、パスワード、秘密鍵は `[REDACTED:<種類>]` に置き換えます。それ以外の個人の情報は、書いたとおりに残ります。記録に残っていれば、使ったアプリ、モデル、推論量（effort）、トークン数も書きます。形式は [`docs/transcripts.md`](docs/transcripts.md) にまとめてあります。ほかの AI（Meta の Muse、ChatGPT、Claude のチャットなど）には、[`pmo-transcribe`](skills/pmo-transcribe/SKILL.md) に従って残すよう頼みます。記録をプログラムで読めるならそのまま写し、読めなければ会話を覚えている範囲で書き起こして `capture: agent-reconstructed` と印を付けます。Claude Code は自分の記録を `cleanupPeriodDays`（初期設定は 30 日）で消すので、それまでに取り込んでください。
 
-原文は記憶ではありません。会話の最初には読み込まれず、検索でも頼んだときだけ対象になります（`pmo search --include-transcripts`、`pmo_search(include_transcripts=true)`）。PMO につないだ AI なら、どれからでも読めます。
+原文は記憶ではありません。会話の最初には読み込まれず、検索でも頼んだときだけ対象になります（`pmo search --include-transcripts`、`pmo_search(include_transcripts=true)`）。PMO につないだ AI なら、どれからでも読めます。原文はデータとして扱われ、AI は原文の中に書かれた指示（貼り付けた Web ページの文など）には従いません。
 
 これまでの会話は `pmo transcripts sync <vault>` で一度に取り込みます。そのあとも自動で残すには、`~/.claude/settings.json` にフックを足します。返答のたびに原文を更新し、会話の始まりに取りこぼした会話（Codex の会話を含む）を取り込みます。また、会話の始まりに AI へ会話 ID を伝えるので、AI は記憶を保存するときに `source_session` としてその ID を付けられます。
 
