@@ -99,6 +99,60 @@ def test_import_keeps_only_conversation_text(tmp_path: Path):
         assert dropped not in body, dropped
 
 
+def test_import_without_metadata_keeps_the_original_frontmatter(tmp_path: Path):
+    vault = _vault(tmp_path)
+    log = _write_log(tmp_path / "projects" / "-work-demo", _entries())
+
+    meta, body = load_file(vault / import_claude_code(vault, log)["path"])
+
+    assert list(meta) == [
+        "schema", "source", "session_id", "title", "cwd", "started_at", "updated_at", "turns", "redactions",
+    ]
+    assert "## 2026-10-21 22:49 Assistant\n" in body
+
+
+def _model_reply(text, ts, model, *, effort=None, message_id=None, usage=None):
+    entry = _assistant([{"type": "text", "text": text}], ts)
+    entry["message"].update({"model": model, "id": message_id or f"msg-{ts}"})
+    if usage:
+        entry["message"]["usage"] = usage
+    if effort:
+        entry["effort"] = effort
+    return {**entry, "entrypoint": "claude-desktop", "version": "2.1.308"}
+
+
+def test_import_records_models_effort_app_and_tokens(tmp_path: Path):
+    vault = _vault(tmp_path)
+    usage = {"input_tokens": 10, "cache_creation_input_tokens": 5, "cache_read_input_tokens": 100,
+             "output_tokens": 7}
+    entries = [
+        _user("質問", "2026-10-21T13:49:26.000Z", origin={"kind": "human"}),
+        # One API response logged as two entries with the same message id and usage.
+        _model_reply("前半", "2026-10-21T13:49:30.000Z", "claude-opus-5-5", effort="medium",
+                     message_id="msg-1", usage=usage),
+        _model_reply("後半", "2026-10-21T13:49:31.000Z", "claude-opus-5-5", effort="medium",
+                     message_id="msg-1", usage=usage),
+        _model_reply("harness note", "2026-10-21T13:49:32.000Z", "<synthetic>"),
+        _user("次", "2026-10-21T13:50:00.000Z", origin={"kind": "human"}),
+        _model_reply("同じ設定", "2026-10-21T13:50:01.000Z", "claude-opus-5-5", effort="medium",
+                     message_id="msg-2", usage=usage),
+        _user("切り替えた", "2026-10-21T13:51:00.000Z", origin={"kind": "human"}),
+        _model_reply("別のモデル", "2026-10-21T13:51:01.000Z", "claude-sonnet-5-5", effort="high",
+                     message_id="msg-3", usage=usage),
+    ]
+    log = _write_log(tmp_path / "projects" / "-work-demo", entries)
+
+    meta, body = load_file(vault / import_claude_code(vault, log)["path"])
+
+    assert meta["app"] == "claude-desktop" and meta["app_version"] == "2.1.308"
+    assert meta["models"] == ["claude-opus-5-5", "claude-sonnet-5-5"]
+    assert meta["efforts"] == ["medium", "high"]
+    assert meta["tokens"] == {"input": 345, "cached_input": 300, "output": 21}
+    assert "## 2026-10-21 22:49 Assistant (claude-opus-5-5, effort: medium)\n\n前半\n\n後半" in body
+    assert "## 2026-10-21 22:50 Assistant\n\n同じ設定" in body  # unchanged settings are not repeated
+    assert "## 2026-10-21 22:51 Assistant (claude-sonnet-5-5, effort: high)\n\n別のモデル" in body
+
+
 def test_import_requires_archiving_enabled(tmp_path: Path):
     vault = _vault(tmp_path, archiving=False)
     log = _write_log(tmp_path / "projects" / "-work-demo", _entries())

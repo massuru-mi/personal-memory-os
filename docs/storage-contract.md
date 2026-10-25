@@ -14,7 +14,7 @@ Canonical memory lives in `10_Memory/Events/` (one file per memory event; prefer
 
 Install also no longer creates `00_Inbox`, `20_Projects`, `30_Knowledge` or `40_Decisions`. Projects, knowledge and decisions are recorded as memory events (`type: project_progress`, `knowledge`, `decision`) and grouped by `scope`. Memory save proposals are made in the conversation and saved as events only when approved; there is no candidate queue. If these folders already exist, they remain user Data: still protected from updates and never deleted by PMO.
 
-The optional raw transcript archive `60_Transcripts/` is also user Data. PMO writes it only when `privacy.raw_chat_archiving: true` (`pmo transcripts import|sync|hook`), one Markdown file per conversation at `60_Transcripts/YYYY-MM-DD/<source>_<session id>.md`, and rewrites only its own files there. Transcripts are not memory: bootstrap never loads them, and search includes them only when asked. Install does not create the folder; it appears on the first write.
+The optional raw transcript archive `60_Transcripts/` is also user Data. PMO writes it only when `privacy.raw_chat_archiving: true` (`pmo transcripts import|sync|hook`; assistants without an importer follow the `pmo-transcribe` skill and mark `capture`), one Markdown file per conversation at `60_Transcripts/YYYY-MM-DD/<source>_<session id>.md`, and rewrites only its own files there. The file format is in [`transcripts.md`](transcripts.md). Transcripts are not memory: bootstrap never loads them, and search includes them only when asked. Install does not create the folder; it appears on the first write.
 
 ## Generated
 

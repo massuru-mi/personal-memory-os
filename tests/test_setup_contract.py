@@ -173,3 +173,29 @@ def test_setup_skill_and_readmes_explain_importing_past_chats():
     en_doc = (REPO_ROOT / "docs" / "import-past-chats.md").read_text(encoding="utf-8")
     assert "Register the useful content of this chat in my PMO." in en_doc
     assert 'Give every record a scope: "global"' in en_doc
+
+
+def test_transcribe_skill_is_deployed_and_referenced():
+    repo_skill = (REPO_ROOT / "skills" / "pmo-transcribe" / "SKILL.md").read_text(encoding="utf-8")
+    assert repo_skill == read_system_text("skills/pmo-transcribe/SKILL.md")
+    for text in (read_system_text("START_HERE.md"), read_system_text("protocols/MEMORY_PROTOCOL.md"),
+                 read_system_text("protocols/DAILY_PROTOCOL.md")):
+        assert "_system/skills/pmo-transcribe/SKILL.md" in text
+    for term in ("raw_chat_archiving", "pmo transcripts sync", "capture", "copied", "agent-reconstructed",
+                 "[omitted:", "<chat id>_<YYYY-MM-DD>", "[REDACTED:", "_system/templates/transcript.md",
+                 "never write a file whose `source` the pmo importer handles"):
+        assert term in repo_skill, term
+    start = read_system_text("START_HERE.md")
+    assert "never change another conversation's transcript" in start
+    assert "agent-reconstructed" in start
+
+
+def test_transcript_template_is_a_valid_agent_transcript():
+    from personal_memory_os.frontmatter import loads
+
+    meta, body = loads(read_system_text("templates/transcript.md"))
+    assert meta["schema"] == "pmo.transcript/v1"
+    assert meta["capture"] == "agent-reconstructed"
+    for key in ("source", "session_id", "title", "started_at", "updated_at", "turns", "redactions"):
+        assert key in meta, key
+    assert body.count("\n## ") + body.startswith("## ") == meta["turns"]
