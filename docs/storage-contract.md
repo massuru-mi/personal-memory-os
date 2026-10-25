@@ -22,4 +22,4 @@ The optional raw transcript archive `60_Transcripts/` is also user Data. PMO wri
 
 ## Runtime
 
-The local FTS database and lock files live under `~/.personal-memory-os/<vault-id>/`. They can be removed without data loss.
+The local FTS database (`index.v3.sqlite3`, trigram tokenizer: words match as substrings in any language) and lock files live under `~/.personal-memory-os/<vault-id>/`. They can be removed without data loss.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1 - 2026-10-25
+
+- search finds Japanese (and other text written without spaces): the local index now uses SQLite's trigram tokenizer, so words match anywhere in the text; words shorter than three characters, such as 「記憶」, are found by a substring scan. Space-separated words must all appear. The index file is renamed to `index.v3.sqlite3`, so old indexes are rebuilt
+- transcript redaction no longer mistakes `sk-` inside a word (for example `credential-risk-…` in a URL) for an OpenAI or Anthropic key; keys must start a word
+
 ## 1.4.0 - 2026-10-25
 
 - archive Codex conversations: `pmo transcripts import --source codex` and `pmo transcripts sync` read `~/.codex/sessions` (or `$CODEX_HOME`) into `60_Transcripts/<date>/codex_<thread id>.md`, with thread names from `session_index.jsonl`; Codex-added blocks (AGENTS.md, environment and browser state, plugin lists, internal goal prompts) are dropped, attachments become `[file: <name>]`, and subagent, review and imported-history threads are skipped
