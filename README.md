@@ -218,7 +218,7 @@ Main commands:
 
 ### Raw transcripts (optional)
 
-Set `privacy.raw_chat_archiving: true` in `_config/settings.yaml` to keep the raw text of Claude Code conversations in `60_Transcripts/<date>/claude-code_<session-id>.md`. Only your words and the assistant's are kept; tool calls become one-line markers, and tool output, thinking, text the harness injects and subagent logs are left out. API keys, tokens, passwords and private keys are replaced with `[REDACTED:<kind>]`; other personal information is kept as written. Claude Code deletes its own logs after `cleanupPeriodDays` (30 days by default), so archive them before then.
+Set `privacy.raw_chat_archiving: true` in `_config/settings.yaml` to keep the raw text of Claude Code conversations in `60_Transcripts/<date>/claude-code_<session-id>.md`. Only your words and the assistant's are kept; tool calls become one-line markers, and tool output, thinking, text the harness injects and subagent logs are left out. API keys, tokens, passwords and private keys are replaced with `[REDACTED:<kind>]`; other personal information is kept as written. When the log records them, the transcript also notes the app, the models and reasoning effort used, and token counts. The format is described in [`docs/transcripts.md`](docs/transcripts.md). Claude Code deletes its own logs after `cleanupPeriodDays` (30 days by default), so archive them before then.
 
 Transcripts are not memory: they are not loaded at bootstrap and are left out of search unless you ask (`pmo search --include-transcripts`, `pmo_search(include_transcripts=true)`). Any assistant connected to PMO can read them.
 
