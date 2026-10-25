@@ -59,6 +59,6 @@ Scope is classification metadata, not part of what a record says. To classify a 
 
 Use `supersedes` when the user explicitly changes a prior fact, preference or decision. Preserve history rather than deleting the old event.
 
-A memory may carry `source_session: <source>:<session id>` (for example `claude-code:<id>`) naming the conversation it came from. Add it only when the session ID is known, such as when it is given at session start; never guess one. When raw transcripts are archived, that conversation is `60_Transcripts/<date>/<source>_<session id>.md`.
+A memory may carry `source_session: <source>:<session id>` (for example `claude-code:<id>`) naming the conversation it came from. Add it only when the session ID is known, such as when it is given at session start or follows from the rules in `_system/skills/pmo-transcribe/SKILL.md` (for example `<chat id>_<YYYY-MM-DD>` for a long-running chat); never guess one. When raw transcripts are archived, that conversation is `60_Transcripts/<date>/<source>_<session id>.md`.
 
 `memory.inferred_memory_min_confidence` controls whether intentionally created inferred records appear in generated views; it is not permission to auto-create inferred memory.

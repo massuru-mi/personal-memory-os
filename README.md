@@ -212,17 +212,17 @@ Main commands:
 | `pmo set-scope <vault> <id>… --scope <category>` | Change only the scope of existing records |
 | `pmo daily <vault> YYYY-MM-DD` | Rebuild a day's summary |
 | `pmo ingest-turn <vault> turn.json` | Import memories and session logs prepared by an assistant (including `supersedes` for replacements) |
-| `pmo transcripts sync <vault>` | Archive every Claude Code conversation into `60_Transcripts/` (`import <vault> <log.jsonl>…` for specific logs, `hook <vault>` for Claude Code hooks) |
+| `pmo transcripts sync <vault>` | Archive every Claude Code and Codex conversation into `60_Transcripts/` (`--source` for one app, `import <vault> <log.jsonl>…` for specific logs, `hook <vault>` for Claude Code hooks) |
 
 `ingest-turn` is an entry point for data an assistant has already structured. It does not read conversations or extract memories from them automatically.
 
 ### Raw transcripts (optional)
 
-Set `privacy.raw_chat_archiving: true` in `_config/settings.yaml` to keep the raw text of Claude Code conversations in `60_Transcripts/<date>/claude-code_<session-id>.md`. Only your words and the assistant's are kept; tool calls become one-line markers, and tool output, thinking, text the harness injects and subagent logs are left out. API keys, tokens, passwords and private keys are replaced with `[REDACTED:<kind>]`; other personal information is kept as written. Claude Code deletes its own logs after `cleanupPeriodDays` (30 days by default), so archive them before then.
+Set `privacy.raw_chat_archiving: true` in `_config/settings.yaml` to keep the raw text of Claude Code and Codex conversations in `60_Transcripts/<date>/<claude-code|codex>_<session-id>.md`. Only your words and the assistant's are kept; tool calls become one-line markers, and tool output, thinking, text the app injects and subagent logs are left out. API keys, tokens, passwords and private keys are replaced with `[REDACTED:<kind>]`; other personal information is kept as written. When the log records them, the transcript also notes the app, the models and reasoning effort used, and token counts. The format is described in [`docs/transcripts.md`](docs/transcripts.md). For other assistants (Meta Muse, ChatGPT, Claude chat and so on), ask them to follow [`pmo-transcribe`](skills/pmo-transcribe/SKILL.md): they copy their app's log when a program can read it, or else write the conversation from context and mark it `capture: agent-reconstructed`. Claude Code deletes its own logs after `cleanupPeriodDays` (30 days by default), so archive them before then.
 
 Transcripts are not memory: they are not loaded at bootstrap and are left out of search unless you ask (`pmo search --include-transcripts`, `pmo_search(include_transcripts=true)`). Any assistant connected to PMO can read them.
 
-`pmo transcripts sync <vault>` imports past conversations once. To keep the archive current, add the hook to `~/.claude/settings.json`; it updates the transcript after every reply, catches up on missed sessions at session start, and tells the assistant the session ID to pass as `source_session` when it records a memory:
+`pmo transcripts sync <vault>` imports past conversations once. To keep the archive current, add the hook to `~/.claude/settings.json`; it updates the transcript after every reply, catches up on missed Claude Code and Codex sessions at session start, and tells the assistant the session ID to pass as `source_session` when it records a memory:
 
 ```json
 {

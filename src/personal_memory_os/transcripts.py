@@ -1,7 +1,7 @@
 """Raw conversation archive: the user's and the assistant's words, kept apart from canonical memory.
 
 Transcripts live under ``60_Transcripts/`` and are written only when ``privacy.raw_chat_archiving`` is
-true. They are derived from provider logs, so re-importing a session rewrites its file. Only message
+true. They are derived from provider logs (Claude Code and Codex), so re-importing a session rewrites its file. Only message
 text is kept: tool output, thinking, harness-injected text and subagent logs are dropped, tool calls
 become one-line markers, and secrets such as API keys are redacted.
 """
@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,7 @@ from .paths import VaultPaths
 
 TRANSCRIPT_SCHEMA = "pmo.transcript/v1"
 CLAUDE_CODE = "claude-code"
+CODEX = "codex"
 TITLE_MAX = 60
 
 # -- redaction -----------------------------------------------------------------
@@ -102,6 +104,9 @@ class Turn:
     role: str  # "user" | "assistant"
     at: datetime | None
     parts: list[str] = field(default_factory=list)
+    # Assistant turns only: the model and reasoning effort that produced the turn, when the log records them.
+    model: str | None = None
+    effort: str | None = None
 
 
 @dataclass(slots=True)
@@ -111,6 +116,10 @@ class Transcript:
     cwd: str | None
     title: str | None
     turns: list[Turn]
+    app: str | None = None
+    app_version: str | None = None
+    # Session totals as {"input", "cached_input", "output", "reasoning"}; keys the log does not record are left out.
+    tokens: dict[str, int] | None = None
 
     @property
     def started_at(self) -> datetime | None:
@@ -160,6 +169,21 @@ def _tool_marker(block: dict[str, Any]) -> str:
     return f"`{name}`: {detail}" if detail else f"`{name}`"
 
 
+def _turn_for(turns: list[Turn], role: str, at: datetime | None,
+              model: str | None = None, effort: str | None = None) -> Turn:
+    """Append to the current turn, or start a new one when the role, model or effort changes."""
+    last = turns[-1] if turns else None
+    if last is None or last.role != role or (role == "assistant" and (
+        (model and last.model and model != last.model) or (effort and last.effort and effort != last.effort)
+    )):
+        turns.append(Turn(role, at))
+        last = turns[-1]
+    if role == "assistant":
+        last.model = last.model or model
+        last.effort = last.effort or effort
+    return last
+
+
 def _is_human(entry: dict[str, Any]) -> bool:
     origin = entry.get("origin")
     if isinstance(origin, dict) and origin.get("kind") is not None:
@@ -175,11 +199,9 @@ def parse_claude_code(path: Path) -> Transcript:
     custom_title: str | None = None
     ai_title: str | None = None
     seen: set[str] = set()
-
-    def turn_for(role: str, at: datetime | None) -> Turn:
-        if not turns or turns[-1].role != role:
-            turns.append(Turn(role, at))
-        return turns[-1]
+    app: str | None = None
+    app_version: str | None = None
+    usage: dict[str, dict[str, Any]] = {}
 
     with path.open(encoding="utf-8", errors="replace") as fh:
         for line in fh:
@@ -209,6 +231,8 @@ def parse_claude_code(path: Path) -> Transcript:
                 seen.add(uuid)
             session_id = str(entry.get("sessionId") or session_id)
             cwd = cwd or entry.get("cwd")
+            app = app or entry.get("entrypoint")
+            app_version = entry.get("version") or app_version
             message = entry.get("message")
             if not isinstance(message, dict):
                 continue
@@ -231,22 +255,235 @@ def parse_claude_code(path: Path) -> Transcript:
                     elif block.get("type") == "image":
                         parts.append("[image]")
                 if parts:
-                    turn_for("user", at).parts.extend(parts)
+                    _turn_for(turns, "user", at).parts.extend(parts)
             else:
+                model = message.get("model")
+                # Harness-written messages carry a placeholder model such as "<synthetic>".
+                model = str(model) if model and not str(model).startswith("<") else None
+                effort = str(entry["effort"]) if entry.get("effort") else None
+                # One API response is logged as several entries that repeat its usage; count it once.
+                if model and isinstance(message.get("usage"), dict):
+                    usage[str(message.get("id") or uuid)] = message["usage"]
                 for block in blocks:
                     if not isinstance(block, dict):
                         continue
                     if block.get("type") == "text" and str(block.get("text") or "").strip():
-                        turn_for("assistant", at).parts.append(str(block["text"]).strip())
+                        _turn_for(turns, "assistant", at, model, effort).parts.append(str(block["text"]).strip())
                     elif block.get("type") == "tool_use":
-                        turn_for("assistant", at).parts.append(f"- tool {_tool_marker(block)}")
+                        _turn_for(turns, "assistant", at, model, effort).parts.append(
+                            f"- tool {_tool_marker(block)}"
+                        )
 
     first_user = next((t for t in turns if t.role == "user"), None)
     title = custom_title or ai_title
     if not title and first_user:
         title = " ".join(first_user.parts[0].split())
         title = title if len(title) <= TITLE_MAX else title[: TITLE_MAX - 1] + "…"
-    return Transcript(CLAUDE_CODE, session_id, cwd, title, turns)
+    return Transcript(CLAUDE_CODE, session_id, cwd, title, turns, app, app_version, _claude_tokens(usage))
+
+
+def _claude_tokens(usage: dict[str, dict[str, Any]]) -> dict[str, int] | None:
+    if not usage:
+        return None
+
+    def total(key: str) -> int:
+        return sum(int(u.get(key) or 0) for u in usage.values())
+
+    cached = total("cache_read_input_tokens")
+    return {
+        "input": total("input_tokens") + total("cache_creation_input_tokens") + cached,
+        "cached_input": cached,
+        "output": total("output_tokens"),
+    }
+
+
+# -- Codex parsing -------------------------------------------------------------------
+
+# User-role blocks Codex adds on its own: instructions, environment and app state, attachment framing.
+_CODEX_DROP_PREFIXES = (
+    "# AGENTS.md instructions", "<environment_context", "<recommended_plugins", "<permissions",
+    "<user_instructions", "<skill>", "<turn_aborted", "<image name=", "</image>", "# Files mentioned by the user",
+)
+_CODEX_DROP_TAG_RE = re.compile(
+    r"<(in-app-browser-context|system-reminder|codex_internal_context|external_[a-z_]+)\b[^>]*>.*?</\1>",
+    re.DOTALL,
+)
+# The user's answer to a question Codex asked, stored as JSON.
+_CODEX_ANSWER_RE = re.compile(
+    r"<send_user_message_question_reply>(.*?)</send_user_message_question_reply>", re.DOTALL,
+)
+# Text Codex wraps around the user's request, e.g. when browser state or annotations are attached.
+_CODEX_REQUEST_RE = re.compile(r"^## My request(?: for Codex)?:[ \t]*$", re.MULTILINE)
+_CODEX_MENTIONED_FILES = "# Files mentioned by the user:"
+_CODEX_FILE_LINE_RE = re.compile(r"^## .*: (\S[^\n]*)$", re.MULTILINE)
+_CODEX_ANNOTATIONS_RE = re.compile(r"<response-annotations>(.*?)</response-annotations>", re.DOTALL)
+# Codex's exec tool runs a script that calls other tools (tools.exec_command, tools.apply_patch, ...).
+_CODEX_INNER_TOOL_RE = re.compile(r"\btools\.([A-Za-z0-9_]+)\s*\(")
+_CODEX_PATCH_FILE_RE = re.compile(r"\*\*\* (?:Add|Update|Delete) File: ([^\n\\\"]+)")
+_CODEX_EXEC_CMD_RE = re.compile(r"\bcmd:\s*([\"'`])(.+?)(?<!\\)\1", re.DOTALL)
+
+
+def _codex_annotations(raw: str) -> list[str]:
+    match = _CODEX_ANNOTATIONS_RE.search(raw)
+    try:
+        items = json.loads(match.group(1)) if match else []
+    except json.JSONDecodeError:
+        return []
+    out: list[str] = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        quoted = "\n".join(f"> {line}" for line in str(item.get("text") or "").splitlines())
+        comment = str(item.get("annotation") or "").strip()
+        out.append("\n\n".join(p for p in (quoted, comment) if p))
+    return out
+
+
+def _codex_answers(match: re.Match[str]) -> str:
+    try:
+        items = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return match.group(0)
+    out: list[str] = []
+    for item in items if isinstance(items, list) else []:
+        if isinstance(item, dict):
+            question = "\n".join(f"> {line}" for line in str(item.get("question") or "").splitlines())
+            out.append("\n\n".join(p for p in (question, str(item.get("answer") or "").strip()) if p))
+    return "\n\n".join(out)
+
+
+def _codex_user_text(raw: str) -> str | None:
+    """Return what the user typed in one Codex input block, or None when Codex generated it."""
+    request = list(_CODEX_REQUEST_RE.finditer(raw))
+    if request:
+        # Attachments become [file: name]; annotations keep the quoted text and the user's comment.
+        head = raw[: request[-1].start()]
+        files = []
+        if _CODEX_MENTIONED_FILES in head:
+            files = [f"[file: {Path(m.group(1).strip()).name}]" for m in _CODEX_FILE_LINE_RE.finditer(head)]
+        parts = [*files, *_codex_annotations(head), raw[request[-1].end():].strip()]
+        return "\n\n".join(p for p in parts if p) or None
+    if raw.lstrip().startswith(_CODEX_DROP_PREFIXES):
+        return None
+    return _CODEX_ANSWER_RE.sub(_codex_answers, _CODEX_DROP_TAG_RE.sub("", raw)).strip() or None
+
+
+def _codex_tool_marker(item: dict[str, Any]) -> str:
+    name = str(item.get("name") or "tool")
+    if item.get("namespace"):
+        name = f"{item['namespace']}.{name}"
+    detail: Any = None
+    if item.get("type") == "custom_tool_call":
+        raw = str(item.get("input") or "")
+        inner = _CODEX_INNER_TOOL_RE.search(raw)
+        if inner:
+            name = inner.group(1)
+        found = _CODEX_PATCH_FILE_RE.search(raw) or _CODEX_EXEC_CMD_RE.search(raw)
+        if found:
+            detail = found.group(found.lastindex or 1).replace("\\n", " ")
+        elif not inner:
+            detail = next((line for line in raw.splitlines() if line.strip()), None)
+    else:
+        try:
+            args = json.loads(item.get("arguments") or "{}")
+        except json.JSONDecodeError:
+            args = {}
+        if isinstance(args, dict):
+            detail = next((args[k] for k in (
+                "title", "description", "cmd", "command", "file_path", "path", "query", "url",
+            ) if args.get(k)), None)
+    if isinstance(detail, list):
+        detail = " ".join(str(d) for d in detail)
+    detail = " ".join(str(detail).split()) if detail else ""
+    if len(detail) > 120:
+        detail = detail[:117] + "..."
+    return f"`{name}`: {detail}" if detail else f"`{name}`"
+
+
+def parse_codex(path: Path, titles: dict[str, str] | None = None) -> Transcript:
+    """Read one Codex session log (``~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl``).
+
+    Subagent and review threads are skipped (no turns), and so are threads Codex never ran a turn in:
+    those hold the history of a conversation imported from another app.
+    """
+    turns: list[Turn] = []
+    session_id = path.stem
+    cwd: str | None = None
+    app: str | None = None
+    app_version: str | None = None
+    tokens: dict[str, int] | None = None
+    model: str | None = None
+    effort: str | None = None
+    ran = False
+    seen: set[str] = set()
+
+    with path.open(encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(entry, dict) or not isinstance(entry.get("payload"), dict):
+                continue
+            kind, item = entry.get("type"), entry["payload"]
+            if kind == "session_meta":
+                if item.get("parent_thread_id"):
+                    return Transcript(CODEX, str(item.get("id") or session_id), item.get("cwd"), None, [])
+                session_id = str(item.get("id") or session_id)
+                cwd, app, app_version = item.get("cwd"), item.get("originator"), item.get("cli_version")
+                continue
+            if kind == "turn_context":
+                ran = True
+                model = str(item["model"]) if item.get("model") else model
+                effort = str(item["effort"]) if item.get("effort") else effort
+                continue
+            if kind == "event_msg" and item.get("type") == "token_count":
+                usage = (item.get("info") or {}).get("total_token_usage") or {}
+                if usage:
+                    tokens = {name: int(usage[key]) for name, key in (
+                        ("input", "input_tokens"), ("cached_input", "cached_input_tokens"),
+                        ("output", "output_tokens"), ("reasoning", "reasoning_output_tokens"),
+                    ) if usage.get(key) is not None}
+                continue
+            if kind != "response_item":
+                continue
+            item_id = item.get("id")
+            if item_id:
+                if item_id in seen:
+                    continue
+                seen.add(item_id)
+            at = _parse_ts(entry.get("timestamp"))
+            if item.get("type") == "message" and item.get("role") == "user":
+                parts: list[str] = []
+                for block in item.get("content") or []:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "input_text":
+                        text = _codex_user_text(str(block.get("text") or ""))
+                        if text:
+                            parts.append(text)
+                    elif block.get("type") == "input_image":
+                        parts.append("[image]")
+                if parts:
+                    _turn_for(turns, "user", at).parts.extend(parts)
+            elif item.get("type") == "message" and item.get("role") == "assistant":
+                for block in item.get("content") or []:
+                    if isinstance(block, dict) and block.get("type") == "output_text":
+                        text = str(block.get("text") or "").strip()
+                        if text:
+                            _turn_for(turns, "assistant", at, model, effort).parts.append(text)
+            elif item.get("type") in ("custom_tool_call", "function_call"):
+                _turn_for(turns, "assistant", at, model, effort).parts.append(f"- tool {_codex_tool_marker(item)}")
+
+    if not ran:
+        turns = []
+    title = (titles or {}).get(session_id)
+    first_user = next((t for t in turns if t.role == "user"), None)
+    if not title and first_user:
+        title = " ".join(first_user.parts[0].split())
+    if title and len(title) > TITLE_MAX:
+        title = title[: TITLE_MAX - 1] + "…"
+    return Transcript(CODEX, session_id, cwd, title, turns, app, app_version, tokens)
 
 
 # -- rendering ---------------------------------------------------------------------
@@ -292,13 +529,27 @@ def _join_parts(parts: list[str]) -> str:
     return "\n\n".join(out)
 
 
+def _unique(values: list[str | None]) -> list[str]:
+    return list(dict.fromkeys(v for v in values if v))
+
+
+def _model_label(turn: Turn) -> str:
+    bits = [b for b in (turn.model, f"effort: {turn.effort}" if turn.effort else None) if b]
+    return f" ({', '.join(bits)})" if bits else ""
+
+
 def render(transcript: Transcript, tz: ZoneInfo) -> tuple[dict[str, Any], str, int]:
     """Return frontmatter, Markdown body and the number of redactions."""
     chunks = [f"# {transcript.title or 'Session'}"]
+    shown: tuple[str | None, str | None] = (None, None)
     for turn in transcript.turns:
         stamp = f"{turn.at.astimezone(tz):%Y-%m-%d %H:%M} " if turn.at else ""
+        # Name the model and effort on the first assistant turn and whenever they change.
+        label = ""
+        if turn.role == "assistant" and (turn.model, turn.effort) != shown and (turn.model or turn.effort):
+            label, shown = _model_label(turn), (turn.model, turn.effort)
         text = _demote_headings(_join_parts(turn.parts))
-        chunks.append(f"## {stamp}{_ROLE_LABEL[turn.role]}\n\n{text}")
+        chunks.append(f"## {stamp}{_ROLE_LABEL[turn.role]}{label}\n\n{text}")
     body, redactions = redact("\n\n".join(chunks))
     title, title_redactions = redact(transcript.title or "")
     started, updated = transcript.started_at, transcript.updated_at
@@ -308,11 +559,23 @@ def render(transcript: Transcript, tz: ZoneInfo) -> tuple[dict[str, Any], str, i
         "session_id": transcript.session_id,
         "title": title or None,
         "cwd": transcript.cwd,
+    }
+    # Metadata keys appear only when the log records them, so older transcripts keep their exact form.
+    optional: dict[str, Any] = {"app": transcript.app, "app_version": transcript.app_version}
+    front.update({k: v for k, v in optional.items() if v})
+    front.update({
         "started_at": started.astimezone(tz).isoformat() if started else None,
         "updated_at": updated.astimezone(tz).isoformat() if updated else None,
         "turns": len(transcript.turns),
-        "redactions": redactions + title_redactions,
+    })
+    assistant = [t for t in transcript.turns if t.role == "assistant"]
+    optional = {
+        "models": _unique([t.model for t in assistant]),
+        "efforts": _unique([t.effort for t in assistant]),
+        "tokens": transcript.tokens,
     }
+    front.update({k: v for k, v in optional.items() if v})
+    front["redactions"] = redactions + title_redactions
     return front, body, redactions + title_redactions
 
 
@@ -354,6 +617,21 @@ def _signature(path: Path) -> list[int]:
 
 def import_claude_code(vault_root: Path, log: Path, *, force: bool = False) -> dict[str, Any]:
     """Convert one Claude Code session log into ``60_Transcripts``. Unchanged logs are skipped."""
+    return _import_log(vault_root, log, parse_claude_code, force=force)
+
+
+def import_codex(
+    vault_root: Path, log: Path, *, force: bool = False, titles: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Convert one Codex session log into ``60_Transcripts``. Unchanged logs are skipped."""
+    if titles is None:
+        titles = codex_titles(_codex_home_of(log) or default_codex_home())
+    return _import_log(vault_root, log, lambda path: parse_codex(path, titles), force=force)
+
+
+def _import_log(
+    vault_root: Path, log: Path, parse: Callable[[Path], Transcript], *, force: bool = False,
+) -> dict[str, Any]:
     if not archiving_enabled(vault_root):
         raise ArchivingDisabled("privacy.raw_chat_archiving is false in _config/settings.yaml")
     log = log.expanduser().resolve()
@@ -364,14 +642,19 @@ def import_claude_code(vault_root: Path, log: Path, *, force: bool = False) -> d
     if not force and previous and previous.get("signature") == signature:
         return {"log": key, "path": previous.get("path"), "status": "unchanged"}
     tz = _tz(vault_root)
-    transcript = parse_claude_code(log)
+    transcript = parse(log)
+    paths = VaultPaths(vault_root)
     if not transcript.turns:
+        # Remember empty logs too (subagent threads, imported history) so they are not parsed every sync.
+        with file_lock(paths.runtime_root() / "locks" / "transcripts.lock"):
+            state = _load_state(vault_root)
+            state[key] = {"signature": signature, "path": None}
+            atomic_write_json(_state_path(vault_root), state)
         return {"log": key, "path": None, "status": "empty"}
     rel = transcript_relpath(transcript, tz)
     front, body, redactions = render(transcript, tz)
     content = dumps(front, body)
     target = vault_root / rel
-    paths = VaultPaths(vault_root)
     with file_lock(paths.runtime_root() / "locks" / "transcripts.lock"):
         status = "written"
         if target.exists() and target.read_text(encoding="utf-8") == content:
@@ -396,15 +679,58 @@ def claude_code_logs(projects: Path) -> list[Path]:
     return sorted(p for p in projects.glob("*/*.jsonl") if p.is_file())
 
 
-def sync_claude_code(vault_root: Path, projects: Path | None = None, *, force: bool = False) -> dict[str, Any]:
-    results = [
-        import_claude_code(vault_root, log, force=force)
-        for log in claude_code_logs(projects or default_claude_projects())
-    ]
+def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     counts: dict[str, int] = {}
     for row in results:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
     return {"counts": counts, "results": results}
+
+
+def sync_claude_code(vault_root: Path, projects: Path | None = None, *, force: bool = False) -> dict[str, Any]:
+    return _summary([
+        import_claude_code(vault_root, log, force=force)
+        for log in claude_code_logs(projects or default_claude_projects())
+    ])
+
+
+def default_codex_home() -> Path:
+    base = os.environ.get("CODEX_HOME")
+    return Path(base).expanduser() if base else Path.home() / ".codex"
+
+
+def _codex_home_of(log: Path) -> Path | None:
+    parents = log.expanduser().resolve().parents
+    return next((p.parent for p in parents if p.name == "sessions"), None)
+
+
+def codex_logs(home: Path) -> list[Path]:
+    sessions = home / "sessions"
+    if not sessions.is_dir():
+        return []
+    return sorted(p for p in sessions.rglob("*.jsonl") if p.is_file())
+
+
+def codex_titles(home: Path) -> dict[str, str]:
+    """Thread names from ``session_index.jsonl``; a later entry for the same thread wins."""
+    titles: dict[str, str] = {}
+    try:
+        lines = (home / "session_index.jsonl").read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return titles
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict) and row.get("id") and row.get("thread_name"):
+            titles[str(row["id"])] = str(row["thread_name"])
+    return titles
+
+
+def sync_codex(vault_root: Path, home: Path | None = None, *, force: bool = False) -> dict[str, Any]:
+    home = home or default_codex_home()
+    titles = codex_titles(home)
+    return _summary([import_codex(vault_root, log, force=force, titles=titles) for log in codex_logs(home)])
 
 
 def handle_claude_code_hook(vault_root: Path, payload: dict[str, Any]) -> str | None:
@@ -423,6 +749,7 @@ def handle_claude_code_hook(vault_root: Path, payload: dict[str, Any]) -> str | 
     if event != "SessionStart":
         return None
     sync_claude_code(vault_root)
+    sync_codex(vault_root)
     session_id = payload.get("session_id")
     if not session_id:
         return None

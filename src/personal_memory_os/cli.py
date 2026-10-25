@@ -15,7 +15,15 @@ from .events import new_event_id, now_for_vault, set_scope, write_correction, wr
 from .ingest import ingest_turn
 from .models import CorrectionEvent, MemoryEvent
 from .runtime_index import rebuild_index, search
-from .transcripts import handle_claude_code_hook, import_claude_code, sync_claude_code
+from .transcripts import (
+    CLAUDE_CODE,
+    CODEX,
+    handle_claude_code_hook,
+    import_claude_code,
+    import_codex,
+    sync_claude_code,
+    sync_codex,
+)
 from .views import rebuild_views
 
 
@@ -93,13 +101,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Archive raw conversation text into 60_Transcripts/ (requires privacy.raw_chat_archiving: true)",
     )
     tsub = p.add_subparsers(dest="transcripts_command", required=True)
-    t = tsub.add_parser("import", help="Import Claude Code session logs (.jsonl)")
+    t = tsub.add_parser("import", help="Import Claude Code or Codex session logs (.jsonl)")
     t.add_argument("vault")
     t.add_argument("logs", nargs="+")
+    t.add_argument("--source", choices=[CLAUDE_CODE, CODEX], default=CLAUDE_CODE,
+                   help="Which app wrote the logs (default: claude-code)")
     t.add_argument("--force", action="store_true", help="Rewrite even if the log is unchanged")
-    t = tsub.add_parser("sync", help="Import every Claude Code session log under the projects folder")
+    t = tsub.add_parser("sync", help="Import every Claude Code and Codex session log")
     t.add_argument("vault")
+    t.add_argument("--source", choices=["all", CLAUDE_CODE, CODEX], default="all",
+                   help="Limit to one app (default: all)")
     t.add_argument("--projects", help="Claude Code projects folder (default: ~/.claude/projects)")
+    t.add_argument("--codex-home", help="Codex home folder (default: $CODEX_HOME or ~/.codex)")
     t.add_argument("--force", action="store_true", help="Rewrite even if logs are unchanged")
     t = tsub.add_parser("hook", help="Claude Code hook: reads the hook JSON on stdin; never fails the session")
     t.add_argument("vault")
@@ -195,10 +208,16 @@ def run(args: argparse.Namespace) -> object:
     if cmd == "transcripts":
         root = _root(args.vault)
         if args.transcripts_command == "import":
-            return [import_claude_code(root, Path(log), force=args.force) for log in args.logs]
-        projects = Path(args.projects).expanduser() if args.projects else None
-        result = sync_claude_code(root, projects, force=args.force)
-        return {"counts": result["counts"]}
+            importer = import_codex if args.source == CODEX else import_claude_code
+            return [importer(root, Path(log), force=args.force) for log in args.logs]
+        counts = {}
+        if args.source in ("all", CLAUDE_CODE):
+            projects = Path(args.projects).expanduser() if args.projects else None
+            counts[CLAUDE_CODE] = sync_claude_code(root, projects, force=args.force)["counts"]
+        if args.source in ("all", CODEX):
+            home = Path(args.codex_home).expanduser() if args.codex_home else None
+            counts[CODEX] = sync_codex(root, home, force=args.force)["counts"]
+        return {"counts": counts}
     if cmd == "backup":
         out = Path(args.output).expanduser().resolve() if args.output else None
         return {"path": str(create_backup(_root(args.vault), out))}
