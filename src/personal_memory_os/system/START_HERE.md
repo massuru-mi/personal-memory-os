@@ -49,10 +49,12 @@ Daily/session logging is optional.
 
 ## Raw transcripts
 
-When `privacy.raw_chat_archiving` is `true`, `60_Transcripts/<date>/<source>_<session-id>.md` holds the raw text of past conversations (the user's and the assistant's words; tool output and secrets are left out). They are written by local tooling such as `pmo transcripts`, not by hand.
+When `privacy.raw_chat_archiving` is `true`, `60_Transcripts/<date>/<source>_<session-id>.md` holds the raw text of past conversations (the user's and the assistant's words; tool output and secrets are left out). Local tooling such as `pmo transcripts` writes them from app logs (Claude Code, Codex).
 
 - Transcripts are not canonical memory and are not loaded at bootstrap. Read or search them (`pmo_search` with `include_transcripts`) when you need what was actually said, for example the conversation a memory's `source_session` points to.
-- Do not create, edit or delete transcript files during ordinary operation.
+- `capture` in a transcript's frontmatter says how faithful it is: absent means imported from the app's log by pmo; `copied` means copied from a log by a script; `agent-reconstructed` means an assistant wrote it from its context, so wording may differ from what was said.
+- To archive the conversation you are in when the user asks, or at a checkpoint the user agreed to, follow `_system/skills/pmo-transcribe/SKILL.md`. It uses the pmo importer when there is one and lets you write only your own conversation's transcript otherwise.
+- Otherwise, do not create, edit or delete transcript files, and never change another conversation's transcript.
 
 ## Generated views
 

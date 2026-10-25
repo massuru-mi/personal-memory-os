@@ -10,7 +10,7 @@ from personal_memory_os.errors import DriftError
 def test_install_creates_owned_and_private_layers(tmp_path: Path):
     vault = tmp_path / "vault"
     version = install(vault)
-    assert version["system_version"] == "1.3.0"
+    assert version["system_version"] == "1.4.0"
     assert (vault / "START_HERE.md").exists()
     assert (vault / "_system" / "protocols" / "MEMORY_PROTOCOL.md").exists()
     assert (vault / "_system" / "skills" / "pmo-refresh-views" / "SKILL.md").exists()

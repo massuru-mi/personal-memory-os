@@ -19,6 +19,8 @@ The date is the day the conversation started, in the vault timezone (`language.t
 | `claude-code` | `~/.claude/projects/<project>/<session>.jsonl` (or `$CLAUDE_CONFIG_DIR/projects`) | `pmo transcripts sync`, `import`, `hook` |
 | `codex` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` (or `$CODEX_HOME/sessions`); titles from `session_index.jsonl` | `pmo transcripts sync`, `import --source codex` |
 
+Assistants whose app has no importer (for example Meta Muse, ChatGPT or Claude chat) follow the [`pmo-transcribe`](../skills/pmo-transcribe/SKILL.md) skill: copy the app's log with a script when a program can read it, or else write the transcript from the conversation in context. A conversation that never ends is split by day, with `session_id: <chat id>_<YYYY-MM-DD>`. The skill uses `_system/templates/transcript.md` as the model file.
+
 `pmo transcripts sync <vault>` imports both; `--source claude-code|codex` limits it to one. The Claude Code `SessionStart` hook runs the same sync, so Codex conversations are picked up whenever a Claude Code session starts. Unchanged logs are skipped, including logs that produced no transcript.
 
 Codex specifics:
@@ -86,6 +88,15 @@ Optional metadata, written only when the source log records it. Transcripts with
 | `models` | Models that wrote the assistant turns, in order of first use |
 | `efforts` | Reasoning effort settings used, in order of first use |
 | `tokens` | Session totals: `input` (including cached), `cached_input`, `output`, and `reasoning` when the source counts it separately |
+
+Keys for transcripts an assistant writes itself (`pmo-transcribe`):
+
+| Key | Meaning |
+|---|---|
+| `capture` | How the text was captured. Absent: imported from the app's log by pmo (verbatim). `copied`: copied from a log or export by a script (verbatim). `agent-reconstructed`: written by the assistant from its context, so wording may differ and `[omitted: …]` marks gaps |
+| `chat_id` | The app's ID for the chat, when the transcript is one day of a longer chat |
+| `thread` | `main` or `side`, for apps with a main chat and side chats |
+| `parent_chat_id` | The main chat a side chat belongs to |
 
 In the body, an `Assistant` heading names the model and effort on the first assistant turn and again whenever they change.
 
