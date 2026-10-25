@@ -12,6 +12,23 @@ One Markdown file per conversation:
 
 The date is the day the conversation started, in the vault timezone (`language.timezone`). A conversation that grows keeps its file; re-importing rewrites it.
 
+## Sources
+
+| `source` | Read from | Command |
+|---|---|---|
+| `claude-code` | `~/.claude/projects/<project>/<session>.jsonl` (or `$CLAUDE_CONFIG_DIR/projects`) | `pmo transcripts sync`, `import`, `hook` |
+| `codex` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` (or `$CODEX_HOME/sessions`); titles from `session_index.jsonl` | `pmo transcripts sync`, `import --source codex` |
+
+`pmo transcripts sync <vault>` imports both; `--source claude-code|codex` limits it to one. The Claude Code `SessionStart` hook runs the same sync, so Codex conversations are picked up whenever a Claude Code session starts. Unchanged logs are skipped, including logs that produced no transcript.
+
+Codex specifics:
+
+- Subagent and review threads (`parent_thread_id` in `session_meta`) are skipped, like Claude Code subagent logs.
+- Threads Codex never ran a turn in (no `turn_context`) are skipped: they hold conversations imported from another app, such as Claude Code, whose own logs are the source.
+- Blocks Codex adds to user messages are dropped: `AGENTS.md` instructions, `<environment_context>`, `<recommended_plugins>`, skill and permission blocks, browser state, internal goal prompts. When Codex wraps the request (`## My request for Codex:`), only the request is kept; attachments become `[file: <name>]`, annotations keep the quoted text and the user's comment, and answers to Codex's questions keep the question and the answer.
+- Tool calls made through Codex's `exec` script are named after the tool they call (`exec_command`, `apply_patch`, …).
+- `session_id` is the Codex thread ID; a memory points to it as `codex:<thread id>`.
+
 ## Format (`pmo.transcript/v1`)
 
 ```markdown
@@ -53,7 +70,7 @@ The assistant's words.
 | Key | Meaning |
 |---|---|
 | `schema` | Always `pmo.transcript/v1` |
-| `source` | Where the conversation came from, e.g. `claude-code` |
+| `source` | Where the conversation came from: `claude-code` or `codex` |
 | `session_id` | The source's own conversation ID. `<source>:<session_id>` is what a memory's `source_session` points to |
 | `title` | The session's title, or its first user message (60 characters at most) |
 | `cwd` | Working folder, when the source has one |
