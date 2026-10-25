@@ -13,3 +13,6 @@ def isolated_runtime(tmp_path, monkeypatch):
         return tmp_path / "runtime" / digest
 
     monkeypatch.setattr(VaultPaths, "runtime_root", runtime)
+    # Nor read the user's own Claude Code or Codex logs.
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "claude-home"))
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))

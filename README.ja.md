@@ -212,17 +212,17 @@ pmo doctor /path/to/PMO
 | `pmo set-scope <vault> <ID>… --scope <分野>` | 既存の記録の分野だけを書き換える |
 | `pmo daily <vault> YYYY-MM-DD` | その日のまとめを作り直す |
 | `pmo ingest-turn <vault> turn.json` | AI が整理した記憶と会話ログをまとめて取り込む（記憶の置き換え `supersedes` もこれで指定する） |
-| `pmo transcripts sync <vault>` | Claude Code の会話をすべて `60_Transcripts/` に取り込む（特定の記録だけなら `import <vault> <記録.jsonl>…`、Claude Code のフックからは `hook <vault>`） |
+| `pmo transcripts sync <vault>` | Claude Code と Codex の会話をすべて `60_Transcripts/` に取り込む（片方だけなら `--source`、特定の記録だけなら `import <vault> <記録.jsonl>…`、Claude Code のフックからは `hook <vault>`） |
 
 `ingest-turn` は、AI が整理済みのデータを受け取るための入口です。会話を自動で読み取ったり、会話から記憶を自動で抜き出したりはしません。
 
 ### 会話の原文を残す（任意）
 
-`_config/settings.yaml` で `privacy.raw_chat_archiving: true` にすると、Claude Code の会話の原文を `60_Transcripts/日付/claude-code_<会話ID>.md` に残せます。残すのは自分の入力と AI の返答の文だけです。ツールの操作は 1 行の目印にし、ツールの結果、AI の思考の過程、Claude Code が自動で添える文、サブエージェントの記録は入れません。API キー、トークン、パスワード、秘密鍵は `[REDACTED:<種類>]` に置き換えます。それ以外の個人の情報は、書いたとおりに残ります。記録に残っていれば、使ったアプリ、モデル、推論量（effort）、トークン数も書きます。形式は [`docs/transcripts.md`](docs/transcripts.md) にまとめてあります。Claude Code は自分の記録を `cleanupPeriodDays`（初期設定は 30 日）で消すので、それまでに取り込んでください。
+`_config/settings.yaml` で `privacy.raw_chat_archiving: true` にすると、Claude Code と Codex の会話の原文を `60_Transcripts/日付/<claude-code か codex>_<会話ID>.md` に残せます。残すのは自分の入力と AI の返答の文だけです。ツールの操作は 1 行の目印にし、ツールの結果、AI の思考の過程、アプリが自動で添える文、サブエージェントの記録は入れません。API キー、トークン、パスワード、秘密鍵は `[REDACTED:<種類>]` に置き換えます。それ以外の個人の情報は、書いたとおりに残ります。記録に残っていれば、使ったアプリ、モデル、推論量（effort）、トークン数も書きます。形式は [`docs/transcripts.md`](docs/transcripts.md) にまとめてあります。Claude Code は自分の記録を `cleanupPeriodDays`（初期設定は 30 日）で消すので、それまでに取り込んでください。
 
 原文は記憶ではありません。会話の最初には読み込まれず、検索でも頼んだときだけ対象になります（`pmo search --include-transcripts`、`pmo_search(include_transcripts=true)`）。PMO につないだ AI なら、どれからでも読めます。
 
-これまでの会話は `pmo transcripts sync <vault>` で一度に取り込みます。そのあとも自動で残すには、`~/.claude/settings.json` にフックを足します。返答のたびに原文を更新し、会話の始まりに取りこぼした会話を取り込みます。また、会話の始まりに AI へ会話 ID を伝えるので、AI は記憶を保存するときに `source_session` としてその ID を付けられます。
+これまでの会話は `pmo transcripts sync <vault>` で一度に取り込みます。そのあとも自動で残すには、`~/.claude/settings.json` にフックを足します。返答のたびに原文を更新し、会話の始まりに取りこぼした会話（Codex の会話を含む）を取り込みます。また、会話の始まりに AI へ会話 ID を伝えるので、AI は記憶を保存するときに `source_session` としてその ID を付けられます。
 
 ```json
 {
