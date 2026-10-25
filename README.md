@@ -240,7 +240,7 @@ Transcripts are not memory: they are not loaded at bootstrap and are left out of
 
 **Updates**: `pmo update` deploys **the PMO installed on your computer** into Drive. It does not download the latest version from GitHub. Upgrade the local package first, and never update with a version older than the one in Drive. A backup is written to `PMO-Backups` beside the vault before updating. If system files were modified by hand, the update stops. See [`pmo-update`](skills/pmo-update/SKILL.md).
 
-**Search**: the search index lives under `~/.personal-memory-os/` on your computer and can always be rebuilt from Markdown. Run `pmo rebuild` before searching newly added memories.
+**Search**: the search index lives under `~/.personal-memory-os/` on your computer and can always be rebuilt from Markdown. Run `pmo rebuild` before searching newly added memories. Words match anywhere in the text, so Japanese and other languages written without spaces can be searched; separate several words with spaces to find records that contain all of them.
 
 **Known issues**:
 

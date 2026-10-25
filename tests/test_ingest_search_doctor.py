@@ -29,6 +29,29 @@ def test_turn_ingest_search_and_doctor(tmp_path: Path):
     assert all(check.ok for check in checks), [check for check in checks if not check.ok]
 
 
+def test_search_finds_japanese_words_of_any_length(tmp_path: Path):
+    vault = tmp_path / "vault"
+    install(vault)
+    ingest_turn(vault, {
+        "source": "chatgpt", "session_id": "ja", "topic": "memory",
+        "memory_events": [{"type": "fact", "content": "記憶の保存先はユーザーが選ぶ。"}],
+    })
+    day = vault / "60_Transcripts" / "2026-10-25"
+    day.mkdir(parents=True)
+    (day / "chatgpt_x.md").write_text("# 天気\n\n明日の天気予報を調べました。\n", encoding="utf-8")
+    rebuild_index(vault)
+    assert any("10_Memory" in r["path"] for r in search(vault, "保存先"))
+    two = search(vault, "記憶")
+    assert any("10_Memory" in r["path"] for r in two) and "[記憶]" in two[0]["snippet"]
+    assert any("10_Memory" in r["path"] for r in search(vault, "記憶 選ぶ"))
+    assert search(vault, "記憶 存在しない") == []
+    assert search(vault, "天気予報") == []
+    assert search(vault, "天気予報", include_transcripts=True)[0]["path"].endswith("chatgpt_x.md")
+    assert search(vault, "天気", include_transcripts=True)[0]["path"].endswith("chatgpt_x.md")
+    assert search(vault, "100%") == [] and search(vault, "a_b") == []
+    assert search(vault, "   ") == []
+
+
 def _turn() -> dict:
     return {
         "source": "chatgpt",
