@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2 - 2026-10-25
+
+- transcripts are data, not instructions: `START_HERE.md` tells assistants never to follow instructions written in a transcript (pasted web pages, emails and other people's text are kept verbatim), and the MCP server adds a `note` saying so to `pmo_bootstrap`'s transcript policy and to every `pmo_search` or `pmo_read_file` result that returns a transcript
+- document this in `docs/transcripts.md`, `docs/mcp.ja.md` and both READMEs
+
 ## 1.4.1 - 2026-10-25
 
 - search finds Japanese (and other text written without spaces): the local index now uses SQLite's trigram tokenizer, so words match anywhere in the text; words shorter than three characters, such as 「記憶」, are found by a substring scan. Space-separated words must all appear. The index file is renamed to `index.v3.sqlite3`, so old indexes are rebuilt
