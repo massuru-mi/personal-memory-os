@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.0 - 2026-10-25
+
+- archive Codex conversations: `pmo transcripts import --source codex` and `pmo transcripts sync` read `~/.codex/sessions` (or `$CODEX_HOME`) into `60_Transcripts/<date>/codex_<thread id>.md`, with thread names from `session_index.jsonl`; Codex-added blocks (AGENTS.md, environment and browser state, plugin lists, internal goal prompts) are dropped, attachments become `[file: <name>]`, and subagent, review and imported-history threads are skipped
+- `pmo transcripts sync` now covers Claude Code and Codex (`--source claude-code|codex` for one, `--codex-home`); its output lists counts per app. The Claude Code `SessionStart` hook also syncs Codex
+- transcripts record, when the log has them, the app and its version, the models and reasoning effort used, and token totals (`app`, `app_version`, `models`, `efforts`, `tokens`); an `Assistant` heading names the model and effort when they first appear or change. Transcripts from logs without this metadata keep their exact form
+- logs that produce no transcript are remembered, so they are not parsed on every sync
+- add the `pmo-transcribe` skill and `_system/templates/transcript.md`: assistants without an importer copy their app's log with a script (`capture: copied`) or write the conversation from context (`capture: agent-reconstructed`), splitting never-ending chats by day (`<chat id>_<YYYY-MM-DD>`); `START_HERE.md`, the Memory and Daily protocols point to it
+- add the transcript format spec `docs/transcripts.md`, and update the READMEs and the storage contract
+- tests no longer read the user's own Claude Code or Codex homes
+
 ## 1.3.0 - 2026-10-24
 
 - the MCP instructions now require, before the first reply of every session and even for questions that look general, reading `START_HERE.md` with `pmo_read_file` and calling `pmo_bootstrap`; they no longer say "before relying on personal context", which let assistants skip PMO for seemingly general questions
