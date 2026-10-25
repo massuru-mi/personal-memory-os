@@ -102,6 +102,9 @@ class Turn:
     role: str  # "user" | "assistant"
     at: datetime | None
     parts: list[str] = field(default_factory=list)
+    # Assistant turns only: the model and reasoning effort that produced the turn, when the log records them.
+    model: str | None = None
+    effort: str | None = None
 
 
 @dataclass(slots=True)
@@ -111,6 +114,10 @@ class Transcript:
     cwd: str | None
     title: str | None
     turns: list[Turn]
+    app: str | None = None
+    app_version: str | None = None
+    # Session totals as {"input", "cached_input", "output", "reasoning"}; keys the log does not record are left out.
+    tokens: dict[str, int] | None = None
 
     @property
     def started_at(self) -> datetime | None:
@@ -160,6 +167,21 @@ def _tool_marker(block: dict[str, Any]) -> str:
     return f"`{name}`: {detail}" if detail else f"`{name}`"
 
 
+def _turn_for(turns: list[Turn], role: str, at: datetime | None,
+              model: str | None = None, effort: str | None = None) -> Turn:
+    """Append to the current turn, or start a new one when the role, model or effort changes."""
+    last = turns[-1] if turns else None
+    if last is None or last.role != role or (role == "assistant" and (
+        (model and last.model and model != last.model) or (effort and last.effort and effort != last.effort)
+    )):
+        turns.append(Turn(role, at))
+        last = turns[-1]
+    if role == "assistant":
+        last.model = last.model or model
+        last.effort = last.effort or effort
+    return last
+
+
 def _is_human(entry: dict[str, Any]) -> bool:
     origin = entry.get("origin")
     if isinstance(origin, dict) and origin.get("kind") is not None:
@@ -175,11 +197,9 @@ def parse_claude_code(path: Path) -> Transcript:
     custom_title: str | None = None
     ai_title: str | None = None
     seen: set[str] = set()
-
-    def turn_for(role: str, at: datetime | None) -> Turn:
-        if not turns or turns[-1].role != role:
-            turns.append(Turn(role, at))
-        return turns[-1]
+    app: str | None = None
+    app_version: str | None = None
+    usage: dict[str, dict[str, Any]] = {}
 
     with path.open(encoding="utf-8", errors="replace") as fh:
         for line in fh:
@@ -209,6 +229,8 @@ def parse_claude_code(path: Path) -> Transcript:
                 seen.add(uuid)
             session_id = str(entry.get("sessionId") or session_id)
             cwd = cwd or entry.get("cwd")
+            app = app or entry.get("entrypoint")
+            app_version = entry.get("version") or app_version
             message = entry.get("message")
             if not isinstance(message, dict):
                 continue
@@ -231,22 +253,46 @@ def parse_claude_code(path: Path) -> Transcript:
                     elif block.get("type") == "image":
                         parts.append("[image]")
                 if parts:
-                    turn_for("user", at).parts.extend(parts)
+                    _turn_for(turns, "user", at).parts.extend(parts)
             else:
+                model = message.get("model")
+                # Harness-written messages carry a placeholder model such as "<synthetic>".
+                model = str(model) if model and not str(model).startswith("<") else None
+                effort = str(entry["effort"]) if entry.get("effort") else None
+                # One API response is logged as several entries that repeat its usage; count it once.
+                if model and isinstance(message.get("usage"), dict):
+                    usage[str(message.get("id") or uuid)] = message["usage"]
                 for block in blocks:
                     if not isinstance(block, dict):
                         continue
                     if block.get("type") == "text" and str(block.get("text") or "").strip():
-                        turn_for("assistant", at).parts.append(str(block["text"]).strip())
+                        _turn_for(turns, "assistant", at, model, effort).parts.append(str(block["text"]).strip())
                     elif block.get("type") == "tool_use":
-                        turn_for("assistant", at).parts.append(f"- tool {_tool_marker(block)}")
+                        _turn_for(turns, "assistant", at, model, effort).parts.append(
+                            f"- tool {_tool_marker(block)}"
+                        )
 
     first_user = next((t for t in turns if t.role == "user"), None)
     title = custom_title or ai_title
     if not title and first_user:
         title = " ".join(first_user.parts[0].split())
         title = title if len(title) <= TITLE_MAX else title[: TITLE_MAX - 1] + "…"
-    return Transcript(CLAUDE_CODE, session_id, cwd, title, turns)
+    return Transcript(CLAUDE_CODE, session_id, cwd, title, turns, app, app_version, _claude_tokens(usage))
+
+
+def _claude_tokens(usage: dict[str, dict[str, Any]]) -> dict[str, int] | None:
+    if not usage:
+        return None
+
+    def total(key: str) -> int:
+        return sum(int(u.get(key) or 0) for u in usage.values())
+
+    cached = total("cache_read_input_tokens")
+    return {
+        "input": total("input_tokens") + total("cache_creation_input_tokens") + cached,
+        "cached_input": cached,
+        "output": total("output_tokens"),
+    }
 
 
 # -- rendering ---------------------------------------------------------------------
@@ -292,13 +338,27 @@ def _join_parts(parts: list[str]) -> str:
     return "\n\n".join(out)
 
 
+def _unique(values: list[str | None]) -> list[str]:
+    return list(dict.fromkeys(v for v in values if v))
+
+
+def _model_label(turn: Turn) -> str:
+    bits = [b for b in (turn.model, f"effort: {turn.effort}" if turn.effort else None) if b]
+    return f" ({', '.join(bits)})" if bits else ""
+
+
 def render(transcript: Transcript, tz: ZoneInfo) -> tuple[dict[str, Any], str, int]:
     """Return frontmatter, Markdown body and the number of redactions."""
     chunks = [f"# {transcript.title or 'Session'}"]
+    shown: tuple[str | None, str | None] = (None, None)
     for turn in transcript.turns:
         stamp = f"{turn.at.astimezone(tz):%Y-%m-%d %H:%M} " if turn.at else ""
+        # Name the model and effort on the first assistant turn and whenever they change.
+        label = ""
+        if turn.role == "assistant" and (turn.model, turn.effort) != shown and (turn.model or turn.effort):
+            label, shown = _model_label(turn), (turn.model, turn.effort)
         text = _demote_headings(_join_parts(turn.parts))
-        chunks.append(f"## {stamp}{_ROLE_LABEL[turn.role]}\n\n{text}")
+        chunks.append(f"## {stamp}{_ROLE_LABEL[turn.role]}{label}\n\n{text}")
     body, redactions = redact("\n\n".join(chunks))
     title, title_redactions = redact(transcript.title or "")
     started, updated = transcript.started_at, transcript.updated_at
@@ -308,11 +368,23 @@ def render(transcript: Transcript, tz: ZoneInfo) -> tuple[dict[str, Any], str, i
         "session_id": transcript.session_id,
         "title": title or None,
         "cwd": transcript.cwd,
+    }
+    # Metadata keys appear only when the log records them, so older transcripts keep their exact form.
+    optional: dict[str, Any] = {"app": transcript.app, "app_version": transcript.app_version}
+    front.update({k: v for k, v in optional.items() if v})
+    front.update({
         "started_at": started.astimezone(tz).isoformat() if started else None,
         "updated_at": updated.astimezone(tz).isoformat() if updated else None,
         "turns": len(transcript.turns),
-        "redactions": redactions + title_redactions,
+    })
+    assistant = [t for t in transcript.turns if t.role == "assistant"]
+    optional = {
+        "models": _unique([t.model for t in assistant]),
+        "efforts": _unique([t.effort for t in assistant]),
+        "tokens": transcript.tokens,
     }
+    front.update({k: v for k, v in optional.items() if v})
+    front["redactions"] = redactions + title_redactions
     return front, body, redactions + title_redactions
 
 
