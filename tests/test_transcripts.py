@@ -242,6 +242,8 @@ def test_cli_record_source_session(tmp_path: Path):
     "text",
     [
         "sk-ant-api03-" + "a" * 40,
+        "OPENAI_KEY sk-proj-" + "d" * 40,
+        "(sk-" + "e" * 40 + ")",
         "ghp_" + "b" * 36,
         "AKIAABCDEFGHIJKLMNOP",
         "Authorization: Bearer " + "c" * 30,
@@ -256,7 +258,11 @@ def test_redact_secrets(text: str):
 
 @pytest.mark.parametrize(
     "text",
-    ["Password:\nFetching escape-0.0.4.gem", "トークン数は 8,000 文字まで", "api_key は環境変数に置く"],
+    [
+        "Password:\nFetching escape-0.0.4.gem", "トークン数は 8,000 文字まで", "api_key は環境変数に置く",
+        "https://example.com/blog/closing-the-credential-risk-gap-for-ai-agents-2026",
+        "task-runner-for-long-jobs-with-retries", "desk-organizer-ideas-for-small-rooms",
+    ],
 )
 def test_redact_leaves_ordinary_text(text: str):
     assert redact(text) == (text, 0)

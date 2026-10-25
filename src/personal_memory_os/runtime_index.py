@@ -8,7 +8,11 @@ from .paths import VaultPaths
 
 SKIP_PARTS = {"_system", ".obsidian"}
 # Bump when the table layout changes so stale indexes are rebuilt instead of queried.
-INDEX_FILE = "index.v2.sqlite3"
+INDEX_FILE = "index.v3.sqlite3"
+# The trigram tokenizer matches any substring of three characters or more, so words in text without
+# spaces (Japanese, Chinese) are found too. Shorter words fall back to a substring scan.
+TRIGRAM = 3
+SNIPPET_CHARS = 40
 
 
 def _documents(vault_root: Path):
@@ -28,7 +32,7 @@ def rebuild_index(vault_root: Path) -> Path:
     try:
         conn.execute("DROP TABLE IF EXISTS docs")
         conn.execute(
-            "CREATE VIRTUAL TABLE docs USING fts5(path UNINDEXED, kind UNINDEXED, content, tokenize='unicode61')"
+            "CREATE VIRTUAL TABLE docs USING fts5(path UNINDEXED, kind UNINDEXED, content, tokenize='trigram')"
         )
         conn.executemany("INSERT INTO docs(path, kind, content) VALUES (?, ?, ?)", _documents(vault_root))
         conn.commit()
@@ -37,25 +41,53 @@ def rebuild_index(vault_root: Path) -> Path:
     return db
 
 
+def _snippet(content: str, terms: list[str]) -> str:
+    lower = content.lower()
+    hits = [(lower.find(t.lower()), t) for t in terms]
+    hits = [(i, t) for i, t in hits if i >= 0]
+    if not hits:
+        return ""
+    start, term = min(hits)
+    left, right = max(0, start - SNIPPET_CHARS), start + len(term) + SNIPPET_CHARS
+    text = f"{content[left:start]}[{content[start:start + len(term)]}]{content[start + len(term):right]}"
+    text = " ".join(text.split())
+    return ("… " if left else "") + text + (" …" if right < len(content) else "")
+
+
 def search(
     vault_root: Path, query: str, limit: int = 20, *, include_transcripts: bool = False,
 ) -> list[dict[str, str]]:
-    """Search canonical records; raw transcripts are included only when asked for."""
+    """Search canonical records; raw transcripts are included only when asked for.
+
+    Space-separated words must all appear. Words of any length and in any language match as substrings.
+    """
     db = VaultPaths(vault_root).runtime_root() / INDEX_FILE
     if not db.exists():
         rebuild_index(vault_root)
-    where = "docs MATCH ?" if include_transcripts else "docs MATCH ? AND kind = 'record'"
-    sql = (
-        f"SELECT path, snippet(docs, 2, '[', ']', ' … ', 20) FROM docs WHERE {where} "
-        "ORDER BY rank LIMIT ?"
-    )
+    terms = query.split()
+    if not terms:
+        return []
+    kind = "" if include_transcripts else " AND kind = 'record'"
     conn = sqlite3.connect(db)
     try:
-        try:
-            rows = conn.execute(sql, (query, limit)).fetchall()
-        except sqlite3.OperationalError:
-            quoted = '"' + query.replace('"', '""') + '"'
-            rows = conn.execute(sql, (quoted, limit)).fetchall()
+        if all(len(t) >= TRIGRAM for t in terms):
+            sql = (
+                f"SELECT path, snippet(docs, 2, '[', ']', ' … ', {SNIPPET_CHARS // 2}) FROM docs "
+                f"WHERE docs MATCH ?{kind} ORDER BY rank LIMIT ?"
+            )
+            try:
+                rows = conn.execute(sql, (query, limit)).fetchall()
+            except sqlite3.OperationalError:
+                quoted = " ".join('"' + t.replace('"', '""') + '"' for t in terms)
+                rows = conn.execute(sql, (quoted, limit)).fetchall()
+        else:
+            # A word shorter than a trigram cannot use the index: scan for every word as a substring.
+            like = " AND ".join("content LIKE ? ESCAPE '\\'" for _ in terms)
+            args = ["%" + t.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%" for t in terms]
+            found = conn.execute(
+                f"SELECT path, content FROM docs WHERE {like}{kind} ORDER BY path DESC LIMIT ?", (*args, limit),
+            ).fetchall()
+            rows = [(path, _snippet(content, terms)) for path, content in found]
     finally:
         conn.close()
     return [{"path": path, "snippet": snippet} for path, snippet in rows]
